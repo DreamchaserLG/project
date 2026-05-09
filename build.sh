@@ -1,8 +1,6 @@
 #!/bin/sh
+PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 if [ "$1" = "build" ];then
-    mkdir /home/changsheng/project/project65391/project
-    cp -a /home/changsheng/project/project65391/server/. /home/changsheng/project/project65391/project/
-    cd /home/changsheng/project/project65391/project
-    rm -rf /home/changsheng/project/project65391/server
+    cd "$PROJECT_DIR"
     echo "执行成功"
 fi
