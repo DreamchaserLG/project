@@ -1,0 +1,30 @@
+# IDE and OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Build outputs
+target/
+logs/
+.npm-cache/
+src/main/resources/static/**/dist/
+src/main/resources/static/**/node_modules/
+
+# Local runtime configuration
+src/main/resources/application-local.yml
+src/main/resources/static/admin/.env.local
+src/main/resources/static/home/.env.local
+src/main/resources/static/**/.env.local
+src/main/resources/static/**/.env.*.local
+maven/
+
+# Local data and debug artifacts
+data_backup_before_refresh.sql
+LOCAL_RUN.md
+*.log
+*.bak
+*.tmp
+*.orig
+*.rej

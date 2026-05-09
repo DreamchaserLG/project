@@ -1,0 +1,20 @@
+{
+  "name": "project-root",
+  "private": true,
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": "22.17.0",
+    "npm": "10.9.2"
+  },
+  "scripts": {
+    "project": "node ./tools/project-cli.js",
+    "backend:run": "node ./tools/project-cli.js backend:run",
+    "backend:compile": "node ./tools/project-cli.js backend:compile",
+    "admin:install": "node ./tools/project-cli.js admin:install",
+    "admin:dev": "node ./tools/project-cli.js admin:dev",
+    "admin:build": "node ./tools/project-cli.js admin:build",
+    "home:install": "node ./tools/project-cli.js home:install",
+    "home:dev": "node ./tools/project-cli.js home:dev",
+    "home:build": "node ./tools/project-cli.js home:build"
+  }
+}

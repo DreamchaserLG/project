@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>首页统计图</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.6.0/echarts.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/echarts-wordcloud/2.1.0/echarts-wordcloud.min.js"></script>
+    <script>
+        if (typeof echarts === 'undefined') {
+            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"><\/script>');
+        }
+    </script>
+    <link rel="stylesheet" href="./css/main.css">
+	<link rel="stylesheet" href="../css/diy.css">
+    <script src="./base.js"></script>
+	<style>
+		.Echarts-box .box{
+			min-height: 420px;
+		}
+        .update_word_cloud_btn {
+            cursor: pointer;
+            font-size: 12px;
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            color: #999;
+        }
+	</style>
+</head>
+<body id="root_index" class="page_user page_user_chart">
+    <div class="container container-fluid Echarts-box">
+            <!-- 柱状图 -->
+        <div class="chart-container card chart box chart_box" style="display: none;position: relative;height:400px;" id="chart_travel_confirmation_1_box">
+            <h2>会展参与人数统计</h2>
+            <div id="bar_chart_travel_confirmation_1" style="width: 100%; height: 350px;"></div>
+        </div>
+                <!-- 饼状图 -->
+        <div class="chart-container card chart box chart_box" style="display: none;position: relative;height:400px;" id="chart_message_notification_2_box">
+            <h2>消息查看统计</h2>
+            <div id="rose_chart_message_notification_2" style="width: 100%; height: 350px;"></div>
+        </div>
+                <!-- 折线图 -->
+        <div class="chart-container card chart box chart_box" style="display: none;position: relative;height:400px;" id="chart_data_statistics_3_box">
+            <h2>会展数据统计</h2>
+            <div id="dynamic_line_chart_data_statistics_3" style="width: 100%; height: 350px;"></div>
+        </div>
+        </div>
+        <script src="./js/roseOption.js"></script>
+        <script src="./css/main_colors/roseColors.js"></script>
+        <script src="./js/barOption.js"></script>
+        <script src="./css/main_colors/barColors.js"></script>
+        <script src="./js/dynamicLineOption.js"></script>
+        <script src="./css/main_colors/dynamicLineColors.js"></script>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const user_id = urlParams.get("user_id"); // 获取 user_id 的值
+        const user_group = urlParams.get("user_group"); // 获取 user_group 的值
+        if (!user_id || !user_group){
+            throw new Error("中断执行");
+        }
+
+        var permissions;
+
+        async function get_list() {
+            await fetch(baseUrl + '/api/auth/get_list?user_group='+user_group)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.result && data.result.list) {
+                            permissions = data.result.list
+                        }
+                    })
+                    .catch(err => {
+                        console.error('加载权限数据失败:', err);
+                    });
+        }
+
+        async function checkPermissionsAndShowCharts() {
+            await get_list();
+
+            function $get_power(path) {
+                if (!permissions){
+                    return null;
+                }
+                let list = permissions;
+                let obj;
+                for (var i = 0; i < list.length; i++) {
+                    var o = list[i];
+                    if (o.path === path) {
+                        obj = o;
+                        break;
+                    }
+                }
+                return obj;
+            }
+
+            /**
+             * 是否有统计字段的权限
+             */
+            function $check_figure(path) {
+                let o = $get_power(path);
+                if (o) {
+                    let option = JSON.parse(o.option);
+                    if (option.figure)
+                        return true
+                }
+                return false;
+            }
+
+            //权限验证
+                if ($check_figure('/travel_confirmation/table')) {
+                let chart_travel_confirmation_1_box = document.querySelector('#chart_travel_confirmation_1_box')
+                if (chart_travel_confirmation_1_box) {
+                    chart_travel_confirmation_1_box.style.display = 'block'
+                }
+            }
+                    if ($check_figure('/message_notification/table')) {
+                let chart_message_notification_2_box = document.querySelector('#chart_message_notification_2_box')
+                if (chart_message_notification_2_box) {
+                    chart_message_notification_2_box.style.display = 'block'
+                }
+            }
+                    if ($check_figure('/data_statistics/table')) {
+                let chart_data_statistics_3_box = document.querySelector('#chart_data_statistics_3_box')
+                if (chart_data_statistics_3_box) {
+                    chart_data_statistics_3_box.style.display = 'block'
+                }
+            }
+                resizeChart();
+        }
+
+        // 执行权限检查和图表显示
+        checkPermissionsAndShowCharts();
+
+        // 用户列表缓存
+        let userListCache = [];
+
+        // 获取用户列表并缓存
+        async function fetchAndCacheUserList() {
+            await fetch(baseUrl + '/api/user/get_list')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.result && data.result.list) {
+                        userListCache = data.result.list;
+                    }
+                })
+                .catch(err => {
+                    console.error('获取用户列表失败:', err);
+                });
+        }
+
+        fetchAndCacheUserList();
+
+        // 通过 user_id 获取 nickname
+        function getNicknameByUserId(userId) {
+            const user = userListCache.find(u => u.user_id === userId);
+            return user ? user.nickname : '未知用户';
+        }
+
+        // 获取地址
+        function fullUrl(url) {
+            var url_new = "";
+            if (url) {
+                if (url.indexOf("~/") === 0) {
+                    url_new = url.replace('~/', baseUrl+'/');
+                } else if (url.indexOf("/http://") === 0) {
+                    url_new = url.replace('/http://', 'http://');
+                } else if (url.indexOf("/") === 0) {
+                    url_new = url.replace('/', baseUrl+'/');
+                } else if (url.indexOf("~") === 0) {
+                    url_new = url.replace('~', '');
+                } else {
+                    url_new = url;
+                }
+            }
+            return url_new;
+        }
+
+        // 处理时间
+        function toTime(time, format) {
+            let ret = "";
+            if(time){
+                let is_date = time instanceof Date;
+                let is_num = typeof(time) == 'number';
+                if(is_date){
+                    ret = toStr(time,format);
+                }
+                else if(is_num){
+                    let t = new Date(time);
+                    ret = toStr(t,format);
+                }
+                else {
+                    let reg = /^(20|21|22|23|[0-1]\d):[0-5]\d:[0-5]\d$/;
+                    let regExp = new RegExp(reg);
+                    if(regExp.test(time)){
+                        ret = time;
+                    }else {
+                        ret = toDateStr(new Date(time.replace('T', ' ').replace('Z', '').replaceAll('-', '/')),format);
+                    }
+                }
+            }
+            return ret;
+        }
+
+        function toStr(t,format) {
+            var o = {
+                "M+": t.getMonth() + 1,
+                "d+": t.getDate(),
+                "h+": t.getHours(),
+                "m+": t.getMinutes(),
+                "s+": t.getSeconds(),
+                "q+": Math.floor((t.getMonth() + 3) / 3),
+                "S": t.getMilliseconds()
+            };
+            if (/(y+)/.test(format)) {
+                var x = RegExp.$1;
+                format = format.replace(x, (t.getFullYear() + "").substr(4 - x.length));
+            }
+            for (var k in o) {
+                if (new RegExp("(" + k + ")").test(format)) {
+                var x = RegExp.$1;
+                format = format.replace(x, x.length == 1 ? o[k] : ("00" + o[k]).substr(("" + o[k]).length));
+                }
+            }
+            return format;
+        }
+
+        function toDateStr(time,format) {
+            let o = {
+                "M+": time.getMonth() + 1,
+                "d+": time.getDate(),
+                "h+": time.getHours(),
+                "m+": time.getMinutes(),
+                "s+": time.getSeconds(),
+                "q+": Math.floor((time.getMonth() + 3) / 3),
+                "S": time.getMilliseconds()
+            };
+            if (/(y+)/.test(format)) {
+                let x = RegExp.$1;
+                format = format.replace(x, (time.getFullYear() + "").substr(4 - x.length));
+            }
+            for (let k in o) {
+                if (new RegExp("(" + k + ")").test(format)) {
+                    let x = RegExp.$1;
+                    format = format.replace(x, x.length === 1 ? o[k] : ("00" + o[k]).substr(("" + o[k]).length));
+                }
+            }
+            return format;
+        }
+
+            // 柱状图
+        var bar_chart_travel_confirmation_1 = echarts.init(document.getElementById('bar_chart_travel_confirmation_1'));
+        var bar_chart_travel_confirmation_1_Interval;
+        async function update_bar_chart_travel_confirmation_1() {
+            let queryStr = '';
+            let seriesNames = [];
+                    seriesNames.push("到场人数");
+            queryStr = queryStr+"number_of_attendees"+","
+                    queryStr = queryStr.substring(0,queryStr.length-1);
+            let queryData = {}
+                    if (user_group!='管理员'){
+                            let sqlwhere = "(";
+                                                                                                                                                                                                    if (user_group=="主办用户"){
+                    sqlwhere+= "host_user = " + user_id + " or ";
+                }
+                                                                        if (user_group=="普通用户"){
+                    sqlwhere+= "enrolled_user = " + user_id + " or ";
+                }
+                                                                                                                                                                                                    if (sqlwhere.length>1){
+                    sqlwhere = sqlwhere.substr(0,sqlwhere.length-4);
+                    sqlwhere += ")";
+                    queryData.sqlwhere = sqlwhere;
+                }
+                        }
+                    let queryString = '';
+            if (Object.keys(queryData).length > 0){
+                queryString = '&'+new URLSearchParams(queryData).toString();
+            }
+            await fetch(baseUrl + '/api/travel_confirmation/bar_group?field='+queryStr+'&groupby=exhibition_theme'+queryString)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.result && data.result.list && data.result.list.length > 0) {
+                            // 解析接口数据
+                            let list = data.result.list;
+                            let barLabels = []
+                            for (let i = 0; i < list.length; i++) {
+                                        barLabels.push(list[i][0])
+                            }
+                            if (bar_chart_travel_confirmation_1_Interval) clearInterval(bar_chart_travel_confirmation_1_Interval);
+                            const { intervalId } = initBarChartWithAutoScroll(
+                            	document.getElementById('bar_chart_travel_confirmation_1'),
+                            	list,
+                            	barLabels,
+                            	seriesNames
+                            );
+                            bar_chart_travel_confirmation_1_Interval = intervalId; // 保存定时器ID
+                        }else{
+                            showNoDataPlaceholder(bar_chart_travel_confirmation_1, '');
+                        }
+                    })
+                    .catch(err => {
+                        console.error('获取柱状图数据失败:', err);
+                    });
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            update_bar_chart_travel_confirmation_1();
+        });
+                // 饼状图
+        var rose_chart_message_notification_2 = echarts.init(document.getElementById('rose_chart_message_notification_2'));
+        async function update_rose_chart_message_notification_2() {
+            let queryData = {}
+                    if (user_group!='管理员'){
+                            let sqlwhere = "(";
+                                                                                                                                                                if (user_group=="主办用户"){
+                    sqlwhere+= "host_user = " + user_id + " or ";
+                }
+                                                                        if (user_group=="普通用户"){
+                    sqlwhere+= "regular_user = " + user_id + " or ";
+                }
+                                                                                                                            if (sqlwhere.length>1){
+                    sqlwhere = sqlwhere.substr(0,sqlwhere.length-4);
+                    sqlwhere += ")";
+                    queryData.sqlwhere = sqlwhere;
+                }
+                        }
+                    let queryString = '';
+            if (Object.keys(queryData).length > 0){
+                queryString = '&'+new URLSearchParams(queryData).toString();
+            }
+            await fetch(baseUrl + '/api/message_notification/list_group?groupby=mark_status'+queryString)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.result && data.result.list && data.result.list.length > 0) {
+                            // 解析接口数据
+                            let list = data.result.list;
+                            let roseLabels = list.map(item => item.mark_status || item[1]);
+                            let roseData = list.map(item => item.count || item[0]);
+                            rose_chart_message_notification_2.setOption(getRoseOption(roseData, roseLabels));
+                        }else{
+                            showNoDataPlaceholder(rose_chart_message_notification_2, '');
+                        }
+                    })
+                    .catch(err => {
+                        console.error('获取南丁格尔玫瑰图数据失败:', err);
+                    });
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            update_rose_chart_message_notification_2();
+        });
+                // 动态排序折线图
+        var dynamic_line_chart_data_statistics_3 = echarts.init(document.getElementById('dynamic_line_chart_data_statistics_3'));
+
+        async function update_dynamic_line_chart_data_statistics_3() {
+            let data = {};
+                    if (user_group!='管理员'){
+                            let sqlwhere = "(";
+                                                                                                                                                                                                                                        if (user_group=="主办用户"){
+                    sqlwhere+= "host_user = " + user_id + " or ";
+                }
+                                                    if (sqlwhere.length>1){
+                    sqlwhere = sqlwhere.substr(0,sqlwhere.length-4);
+                    sqlwhere += ")";
+                    data.sqlwhere = sqlwhere;
+                }
+                        }
+                    let queryString = '';
+            if (Object.keys(data).length > 0){
+                queryString = '&'+new URLSearchParams(data).toString();
+            }
+
+            await fetch(baseUrl + '/api/data_statistics/get_list?groupby=statistical_indicators'+queryString)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.result && data.result.list && data.result.list.length > 0) {
+                            const names = data.result.list.map(item => item.statistical_indicators);
+
+                            fetch(baseUrl + '/api/data_statistics/get_list?groupby=statistics_date'+queryString)
+                                    .then(res => res.json())
+                                    .then(axleData => {
+                                        if (axleData.result && axleData.result.list && axleData.result.list.length > 0) {
+                                            const xAxis = axleData.result.list.map(item => item.statistics_date);
+
+                                            let field = '';
+                                                    field = 'statistical_results';
+                                                    field = field + ',statistical_indicators,statistics_date';
+
+                                            fetch(baseUrl+'/api/data_statistics/get_list?page=1&size=10000&field='+encodeURIComponent(field)+queryString)
+                                                .then(res => res.json())
+                                                .then(allData => {
+                                                    if (allData.result && allData.result.list) {
+                                                        const sumMap = new Map();
+                                                        
+                                                        allData.result.list.forEach(record => {
+                                                            if (!record.statistical_indicators || !record.statistics_date) return;
+                                                            const key = record.statistical_indicators + '|' + record.statistics_date;
+                                                                    const value = Number(record.statistical_results) || 0;
+                                                                    sumMap.set(key, (sumMap.get(key) || 0) + value);
+                                                        });
+
+                                                        const dynamicData = [];
+                                                        names.forEach(name => {
+                                                            xAxis.forEach(axle => {
+                                                                const key = name + '|' + axle;
+                                                                const value = sumMap.get(key) || 0;
+                                                                        let axleFormatted = toTime(axle ,"yyyy-MM-dd");
+                                                                        dynamicData.push([
+                                                                            toTime(axleFormatted ,"yyyy-MM-dd"),
+                                                                            value,
+                                                                            name
+                                                                        ]);
+                                                            });
+                                                        });
+
+                                                        let nameValue = []
+                                                        for (let i = 0; i < names.length; i++) {
+                                                                    nameValue.push(names[i]);
+                                                                }
+
+                                                        let xAxisValue = []
+                                                        for (let i = 0; i < xAxis.length; i++) {
+                                                                    xAxisValue.push(toTime(xAxis[i] ,"yyyy-MM-dd"));
+                                                                }
+                                                        xAxisValue.sort((a, b) => a.localeCompare(b));
+
+                                                        dynamic_line_chart_data_statistics_3.setOption(getDynamicLineOption(nameValue, xAxisValue, dynamicData));
+                                                    } else {
+                                                        showNoDataPlaceholder(dynamic_line_chart_data_statistics_3, '');
+                                                    }
+                                                })
+                                                .catch(err => {
+                                                    console.error('获取统计数据失败:', err);
+                                                    showNoDataPlaceholder(dynamic_line_chart_data_statistics_3, '');
+                                                });
+                                        } else {
+                                            showNoDataPlaceholder(dynamic_line_chart_data_statistics_3, '');
+                                        }
+                                    })
+                                    .catch(err => {
+                                        console.error('获取统计日期数据失败:', err);
+                                    });
+                        }else{
+                            showNoDataPlaceholder(dynamic_line_chart_data_statistics_3, '');
+                        }
+                    })
+                    .catch(err => {
+                        console.error('获取统计指标数据失败:', err);
+                    });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            update_dynamic_line_chart_data_statistics_3();
+        });
+    
+        // 添加显示暂无数据占位图的函数
+        function showNoDataPlaceholder(chartInstance) {
+            const option = {
+                graphic: {
+                    type: 'group',
+                    left: 'center',
+                    top: 'center',
+                    children: [
+                        {
+                            type: 'image',
+                            style: {
+                                image: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3QgeD0iMTUiIHk9IjM1IiB3aWR0aD0iMTAiIGhlaWdodD0iMzAiIGZpbGw9IiNFRUVFRUUiLz4KPHJlY3QgeD0iMzAiIHk9IjI1IiB3aWR0aD0iMTAiIGhlaWdodD0iNDAiIGZpbGw9IiNFRUVFRUUiLz4KPHJlY3QgeD0iNDUiIHk9IjIwIiB3aWR0aD0iMTAiIGhlaWdodD0iNDUiIGZpbGw9IiNFRUVFRUUiLz4KPHJlY3QgeD0iNjAiIHk9IjMwIiB3aWR0aD0iMTAiIGhlaWdodD0iMzUiIGZpbGw9IiNFRUVFRUUiLz4KPC9zdmc+',
+                                width: 100,
+                                height: 100
+                            }
+                        },
+                        {
+                            type: 'text',
+                            style: {
+                                text: '暂无数据',
+                                fontSize: 16,
+                                fill: '#999',
+                                y: 100,
+                                x: 20
+                            }
+                        }
+                    ]
+                },
+                xAxis: { show: false },
+                yAxis: { show: false },
+                series: [],
+                tooltip: { show: false },
+                grid: { show: false }
+            };
+
+            chartInstance.setOption(option, true);
+        };
+
+        function resizeChart() {
+                        bar_chart_travel_confirmation_1.resize();
+                                    rose_chart_message_notification_2.resize();
+                                    dynamic_line_chart_data_statistics_3.resize();
+                    }
+
+        // 窗口大小改变时，重置图表大小
+        window.addEventListener('resize', resizeChart);
+    </script>
+</body>
+</html>
