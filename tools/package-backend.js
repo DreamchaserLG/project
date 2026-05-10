@@ -11,15 +11,17 @@ async function main() {
   stopRunningBackend();
   prepareTargetResources();
   cleanupPackagedArtifacts();
-  const code = await runCommand(mavenCmd, [
+  const mvnArgs = [
     "-B",
-    "-s",
-    mavenSettings,
     "-Dmaven.resources.skip=true",
     "-DskipTests",
     "-Dmaven.test.skip=true",
     "package",
-  ]);
+  ];
+  if (mavenSettings) {
+    mvnArgs.splice(1, 0, "-s", mavenSettings);
+  }
+  const code = await runCommand(mavenCmd, mvnArgs);
   process.exit(code);
 }
 

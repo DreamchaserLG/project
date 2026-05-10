@@ -6,8 +6,10 @@ const rootDir = path.resolve(__dirname, "..");
 const targetClassesDir = path.join(rootDir, "target", "classes");
 const mapperSourceDir = path.join(rootDir, "src", "main", "resources", "mapper");
 const mapperTargetDir = path.join(targetClassesDir, "mapper");
-const mavenCmd = path.join(rootDir, "maven", "bin", "mvn.cmd");
-const mavenSettings = path.join(rootDir, "maven", "conf", "settings.xml");
+const bundledMavenCmd = path.join(rootDir, "maven", "bin", "mvn.cmd");
+const bundledMavenSettings = path.join(rootDir, "maven", "conf", "settings.xml");
+const mavenCmd = fs.existsSync(bundledMavenCmd) ? bundledMavenCmd : "mvn";
+const mavenSettings = fs.existsSync(bundledMavenSettings) ? bundledMavenSettings : null;
 const jarPath = path.join(rootDir, "target", "project-spring_boot-1.0-SNAPSHOT.jar");
 const runtimeJarPath = path.join(rootDir, "target", "runtime", "project-spring_boot-run.jar");
 const explodedDir = path.join(rootDir, "target", "exploded");
@@ -57,18 +59,25 @@ function prepareTargetResources() {
 }
 
 function getConfiguredBackendPort() {
-  const configPath = path.join(rootDir, "src", "main", "resources", "application-local.yml");
-  if (!fs.existsSync(configPath)) {
-    return 5002;
+  const localConfigPath = path.join(rootDir, "src", "main", "resources", "application-local.yml");
+  if (fs.existsSync(localConfigPath)) {
+    const content = fs.readFileSync(localConfigPath, "utf8");
+    const match = content.match(/^\s*port:\s*(\d+)\s*$/m);
+    if (match) {
+      return Number(match[1]) || 5000;
+    }
   }
 
-  const content = fs.readFileSync(configPath, "utf8");
-  const match = content.match(/^\s*port:\s*(\d+)\s*$/m);
-  if (!match) {
-    return 5002;
+  const mainConfigPath = path.join(rootDir, "src", "main", "resources", "application.yml");
+  if (fs.existsSync(mainConfigPath)) {
+    const content = fs.readFileSync(mainConfigPath, "utf8");
+    const match = content.match(/^\s*port:\s*\$\{SERVER_PORT:(\d+)\}\s*$/m);
+    if (match) {
+      return Number(match[1]) || 5000;
+    }
   }
 
-  return Number(match[1]) || 5002;
+  return 5000;
 }
 
 function getBackendPorts() {

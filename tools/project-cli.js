@@ -80,7 +80,7 @@ const env = {
   ...process.env,
   SPRING_PROFILES_ACTIVE: process.env.SPRING_PROFILES_ACTIVE || "local",
   VUE_APP_API_BASE_URL: process.env.VUE_APP_API_BASE_URL || "/",
-  VUE_APP_DEV_PROXY_TARGET: process.env.VUE_APP_DEV_PROXY_TARGET || "http://127.0.0.1:5002",
+  VUE_APP_DEV_PROXY_TARGET: process.env.VUE_APP_DEV_PROXY_TARGET || "http://127.0.0.1:5000",
   HTTP_PROXY: "",
   HTTPS_PROXY: "",
   ALL_PROXY: "",
@@ -102,17 +102,17 @@ const child = spawn(
   isCmdScript ? (process.env.ComSpec || "cmd.exe") : selected.cmd,
   isCmdScript
     ? [
-        "/d",
-        "/s",
-        "/c",
-        [selected.cmd, ...selected.args].map(quoteWindowsArg).join(" "),
-      ]
+      "/d",
+      "/s",
+      "/c",
+      [selected.cmd, ...selected.args].map(quoteWindowsArg).join(" "),
+    ]
     : selected.args,
   {
-  cwd: selected.cwd,
-  env,
-  stdio: "inherit",
-  shell: false,
+    cwd: selected.cwd,
+    env,
+    stdio: "inherit",
+    shell: false,
   }
 );
 

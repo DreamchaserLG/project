@@ -23,15 +23,17 @@
 
 本仓库已经通过 `.gitignore` 排除了这些本地敏感内容：
 
-- `src/main/resources/application-local.yml`
+- `src/main/resources/application-local.yml`（含真实数据库密码）
 - `frontend/admin/.env.local`
 - `frontend/home/.env.local`
-- `maven/`
+- `maven/`（本地 Maven 配置，含镜像和仓库地址）
 - `target/`
 - `logs/`
 - `LOCAL_RUN.md`
 
 在提交到 GitHub 之前，请确认你没有手动执行 `git add -f` 把这些文件强行加入版本库。
+
+> **注意：** 本仓库不包含 `maven/` 目录。构建脚本会自动检测：如果存在项目内 `maven/` 则使用它，否则 fallback 到系统环境变量中的 `mvn` 命令。请确保你的系统已安装 Maven 并配置好镜像源（推荐阿里云镜像）。
 
 ## 本地运行环境
 
