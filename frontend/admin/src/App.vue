@@ -7,9 +7,9 @@
 			<!-- 侧边栏 -->
 			<page_side :isCollapse="isCollapse"></page_side>
 			<!-- 主体 -->
-			<main>
+			<main :style="{ marginLeft: isCollapse ? '64px' : '240px', transition: 'margin-left 0.3s' }">
 				<!-- 页头 -->
-				<page_header v-model="isCollapse" />
+				<page_header @toggle-sidebar="isCollapse = !isCollapse" />
 				<article>
 					<router-view />
 				</article>
@@ -103,13 +103,15 @@
 	body {
 		padding: 0;
 		margin: 0;
-		background-color: #efeff4;
+		background-color: #f4f7fb;
+		font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
 	}
 
 	main {
 		margin: 0 auto;
 		overflow-x: hidden;
 		width: 100%;
+		margin-top: 60px;
 	}
 
 
@@ -119,9 +121,10 @@
 
 	article {
 		box-sizing: border-box;
-		height: calc(100vh - 3.375rem);
-		padding: .5rem;
+		height: calc(100vh - 60px);
+		padding: 0.75rem;
 		overflow-y: auto;
+		background: #f4f7fb;
 	}
 
 	button i::before {

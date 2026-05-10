@@ -428,6 +428,15 @@ const routes = [
             index: 0,
             title: '用户组详情'
         }
+    },
+    {
+        path: '/user_track_log/table',
+        name: 'user_track_log_table',
+        component: () => import('../views/user_track_log/table.vue'),
+        meta: {
+            index: 0,
+            title: '用户行为追踪'
+        }
     }
 ]
 

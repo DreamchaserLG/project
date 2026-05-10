@@ -87,3 +87,6 @@ WHERE `travel_confirmation_limit_times` IS NULL OR TRIM(`travel_confirmation_lim
 UPDATE `registration_information`
 SET `refund_request_limit_times` = '1'
 WHERE `refund_request_limit_times` IS NULL OR TRIM(`refund_request_limit_times`) = '';
+
+INSERT IGNORE INTO `auth` (`auth_id`,`user_group`,`navigation_name`,`table_name`,`mod_name`,`path`,`option_field`,`father_id`,`location`,`target`,`web_id`,`position`,`hidden`,`display`,`add_value`,`set_value`,`get_value`,`del_value`,`score`,`option_field_value`,`create_time`,`update_time`)
+VALUES ('173','管理员','','user_track_log','用户行为追踪','/user_track_log/table','','0','','_blank','1','0','0','0','','','','','0','{}',NOW(),NOW());

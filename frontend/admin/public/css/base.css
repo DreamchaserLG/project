@@ -65,6 +65,29 @@
  * -数字 表示样式1,样式2
 */
 :root {
+	/* === 现代设计语言变量（对齐 home 端） === */
+	--color_primary: #0f5f6c;
+	--color_primary_deep: #093943;
+	--color_primary_soft: #eaf7f7;
+	--color_secondary: #1d7a86;
+	--color_accent: #c9872f;
+	--color_accent_soft: #f7ead4;
+	--color_surface: #ffffff;
+	--color_surface_alt: #f4f7fb;
+	--color_surface_dark: #0f2233;
+	--color_text: #132433;
+	--color_text_soft: #617385;
+	--color_text_sub: #617385;
+	--shadow_soft: 0 24px 60px rgba(11, 46, 67, 0.12);
+	--shadow_card: 0 14px 34px rgba(16, 34, 51, 0.08);
+	--shadow_deep: 0 26px 64px rgba(9, 31, 46, 0.16);
+	--radius_sm: 14px;
+	--radius_md: 22px;
+	--radius_lg: 34px;
+	--font_heading: "DIN_Condensed_Bold", "Microsoft YaHei", sans-serif;
+	--font_body: "PingFang SC", "Microsoft YaHei", sans-serif;
+	--page_max_width: min(100vw - 40px, 1500px);
+
 	/* === 颜色变量 === */
 	/* 基本色 */
 	--color_red: #FF0036;
@@ -89,15 +112,12 @@
 	--color_warning: #fca216;
 	--color_warning_b: #ff8200;
 	--color_warning_h: #fca248;
-	--color_success: #09BB07;
+	--color_success: #197555;
 	--color_success_b: #2F9833;
 	--color_success_h: #3bbb39;
 	--color_info: #26d2ff;
 	--color_info_b: #15baf8;
 	--color_info_h: #58e6ff;
-	--color_primary: #38f;
-	--color_primary_b: #317EF3;
-	--color_primary_h: #51a6ff;
 	--color_default: #666;
 	--color_default_b: #444;
 	--color_default_h: #999;
@@ -110,12 +130,12 @@
 	--color_describe: #666;
 	--color_paragraph: #666;
 	--color_tip: #6a737d;
-	--color_border: #dfe2e5;
+	--color_border: rgba(15, 54, 80, 0.12);
 	--color_mask: rgba(0, 0, 0, 0.4);
 	--color_shadow: rgba(7, 17, 27, 0.1);
 
 	--bg_black: #24292e;
-	--bg_grey: #efeff4;
+	--bg_grey: #f4f7fb;
 	--bg_white: #FDFDFD;
 
 	/* === 其他 === */

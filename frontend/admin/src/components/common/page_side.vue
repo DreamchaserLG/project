@@ -1,6 +1,6 @@
 <template>
   <el-menu ref="menu" class="side el-menu-vertical-demo" default-active="$route.path" @open="handleOpen" @close="handleClose"
-           background-color="#545c64" text-color="#fff" active-text-color="#38f" :collapse="isCollapse" :router="true">
+           background-color="#093943" text-color="rgba(255,255,255,0.82)" active-text-color="#4de8e0" :collapse="isCollapse" :router="true">
 
     <span class="hide-avatar" style="display: none;">
       <img :src="$fullUrl($store.state.user.avatar)" alt="avatar">
@@ -99,6 +99,12 @@
 
       
 
+
+              <el-submenu index="user_track_log"
+                    v-show="user_group == '管理员'">
+          <template slot="title"><i class="el-icon-s-data"></i><span ref="customTemplate10">数据管理</span></template>
+          <el-menu-item index="/user_track_log/table" v-show="user_group == '管理员'" @click="handleButtonClick(10)"><span>用户行为追踪</span></el-menu-item>
+        </el-submenu>
 
               <el-submenu index="auth"
                     v-show="user_group == '管理员'">
@@ -236,24 +242,80 @@
 
 <style scoped="scoped">
   .el-menu-vertical-demo:not(.el-menu--collapse) {
-    width: 16rem;
+    width: 240px;
   }
 
   .side {
     float: left;
-    background: #545c64;
-    color: #fff;
-    overflow-y: scroll;
+    background: #093943 !important;
+    color: rgba(255,255,255,0.82);
+    overflow-y: auto;
     height: 100vh;
+    border-right: 1px solid rgba(255,255,255,0.06);
   }
-.active {
-  color: #409EFF !important;
-}
 
-.sactive {
-  color: #fdfcfb !important;
-}
+  .side >>> .el-menu-item {
+    font-size: 14px;
+    height: 48px;
+    line-height: 48px;
+    border-radius: 0;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .side >>> .el-menu-item:hover {
+    background: rgba(77,232,224,0.08) !important;
+  }
+
+  .side >>> .el-menu-item.is-active {
+    background: rgba(77,232,224,0.12) !important;
+    color: #4de8e0 !important;
+    font-weight: 600;
+    position: relative;
+  }
+
+  .side >>> .el-menu-item.is-active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+    background: linear-gradient(180deg, #4de8e0, #0f5f6c);
+  }
+
+  .side >>> .el-submenu__title {
+    font-size: 14px;
+    height: 48px;
+    line-height: 48px;
+  }
+
+  .side >>> .el-submenu__title:hover {
+    background: rgba(77,232,224,0.08) !important;
+  }
+
+  .side >>> .el-submenu__title i {
+    color: rgba(255,255,255,0.6);
+  }
+
+  .active {
+    color: #4de8e0 !important;
+  }
+
+  .sactive {
+    color: #fdfcfb !important;
+  }
+
   .side::-webkit-scrollbar {
-    display: none;
+    width: 4px;
+  }
+
+  .side::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.15);
+    border-radius: 4px;
+  }
+
+  .side::-webkit-scrollbar-track {
+    background: transparent;
   }
 </style>
