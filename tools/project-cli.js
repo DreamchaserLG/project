@@ -2,8 +2,8 @@ const { spawn } = require("child_process");
 const path = require("path");
 
 const rootDir = path.resolve(__dirname, "..");
-const adminDir = path.join(rootDir, "src", "main", "resources", "static", "admin");
-const homeDir = path.join(rootDir, "src", "main", "resources", "static", "home");
+const adminDir = path.join(rootDir, "frontend", "admin");
+const homeDir = path.join(rootDir, "frontend", "home");
 
 const commands = {
   "backend:run": {

@@ -12,24 +12,23 @@
 
 - `src/main/java`：Spring Boot 后端源码
 - `src/main/resources`：后端配置、Mapper、静态上传目录
-- `src/main/resources/static/admin`：管理员端前端
-- `src/main/resources/static/home`：用户端前端
-- `project.sql`：基础数据库脚本
-- `project_patch_local.sql`：数据库补丁脚本
-- `refresh_demo_content.sql`：演示内容修正脚本
-- `waitlist_demo.sql`：候补流程演示数据脚本
+- `frontend/admin`：管理员端前端
+- `frontend/home`：用户端前端
+- `sql/project.sql`：基础数据库脚本
+- `sql/project_patch_local.sql`：数据库补丁脚本
+- `sql/refresh_demo_content.sql`：演示内容修正脚本
+- `sql/waitlist_demo.sql`：候补流程演示数据脚本
 
 ## 开源前隐私处理
 
 本仓库已经通过 `.gitignore` 排除了这些本地敏感内容：
 
 - `src/main/resources/application-local.yml`
-- `src/main/resources/static/admin/.env.local`
-- `src/main/resources/static/home/.env.local`
+- `frontend/admin/.env.local`
+- `frontend/home/.env.local`
 - `maven/`
 - `target/`
 - `logs/`
-- `data_backup_before_refresh.sql`
 - `LOCAL_RUN.md`
 
 在提交到 GitHub 之前，请确认你没有手动执行 `git add -f` 把这些文件强行加入版本库。
@@ -60,10 +59,12 @@ cd project
 
 先创建数据库 `project_db`，然后按顺序执行：
 
-1. `project.sql`
-2. `project_patch_local.sql`
-3. `refresh_demo_content.sql`（推荐，用于修正演示内容）
-4. `waitlist_demo.sql`（可选，用于候补流程演示）
+```bash
+mysql -u root -p project_db < sql/project.sql
+mysql -u root -p project_db < sql/project_patch_local.sql
+mysql -u root -p project_db < sql/refresh_demo_content.sql   # 推荐，用于修正演示内容
+mysql -u root -p project_db < sql/waitlist_demo.sql           # 可选，用于候补流程演示
+```
 
 ### 3. 复制并填写本地配置
 
@@ -76,8 +77,8 @@ copy src\main\resources\application-local.example.yml src\main\resources\applica
 前端：
 
 ```bash
-copy src\main\resources\static\admin\.env.example src\main\resources\static\admin\.env.local
-copy src\main\resources\static\home\.env.example src\main\resources\static\home\.env.local
+copy frontend\admin\.env.example frontend\admin\.env.local
+copy frontend\home\.env.example frontend\home\.env.local
 ```
 
 需要填写的重点配置：
@@ -106,15 +107,17 @@ copy src\main\resources\static\home\.env.example src\main\resources\static\home\
 管理员端：
 
 ```bash
-npm.cmd --prefix src\main\resources\static\admin install --legacy-peer-deps
-npm.cmd --prefix src\main\resources\static\admin run dev
+cd frontend\admin
+npm install --legacy-peer-deps
+npm run dev
 ```
 
 用户端：
 
 ```bash
-npm.cmd --prefix src\main\resources\static\home install --legacy-peer-deps
-npm.cmd --prefix src\main\resources\static\home run dev
+cd frontend\home
+npm install --legacy-peer-deps
+npm run dev
 ```
 
 默认访问地址：

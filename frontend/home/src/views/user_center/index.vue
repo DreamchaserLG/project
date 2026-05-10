@@ -111,23 +111,37 @@
           </div>
 
           <div v-if="registrationList.length" class="profile_record_list">
-            <router-link
+            <div
               v-for="item in registrationList"
               :key="item.registration_information_id"
               class="profile_record_item"
-              to="/registration_information/table"
             >
-              <div class="profile_record_main">
-                <div class="profile_record_title">{{ item.booth_name || item.exhibition_theme || "报名记录" }}</div>
-                <div class="profile_record_desc">订单编号：{{ item.order_number || "-" }}</div>
-              </div>
+              <router-link
+                class="profile_record_main"
+                to="/registration_information/table"
+              >
+                <div class="profile_record_title">{{ item.booth_name || item.exhibition_theme || "报名信息" }}</div>
+                <div class="profile_record_desc">{{ item.exhibition_theme }}</div>
+              </router-link>
               <div class="profile_record_side">
-                <span class="page_status_tag" :class="tagClassByText(item.registration_status, 'is-primary')">
-                  {{ item.registration_status || "已报名" }}
+                <span class="page_status_tag" :class="tagClassByText(item.registration_status || item.report_status)">
+                  {{ item.registration_status || item.report_status || "已报名" }}
                 </span>
-                <span>{{ formatDate(item.create_time) }}</span>
+                <span>{{ formatDate(item.registration_time || item.payment_date) }}</span>
+                <el-button
+                  v-if="item.examine_state === '已通过' && !hasRefundForRegistration(item)"
+                  class="profile_refund_btn"
+                  type="warning"
+                  size="mini"
+                  @click="applyRefund(item)"
+                >申请退款</el-button>
+                <span
+                  v-else-if="hasRefundForRegistration(item)"
+                  class="page_status_tag is-warning"
+                  style="margin-left: 8px;"
+                >已申请退款</span>
               </div>
-            </router-link>
+            </div>
           </div>
           <div v-else class="page_empty_state">暂无报名记录</div>
         </div>
@@ -376,6 +390,38 @@ export default {
       }
       const number = Number(value);
       return Number.isNaN(number) ? value : number.toFixed(2);
+    },
+    hasRefundForRegistration(reg) {
+      return this.refundList.some(
+        (r) =>
+          String(r.order_number) === String(reg.order_number) ||
+          String(r.enrolled_user) === String(reg.enrolled_user)
+      );
+    },
+    applyRefund(reg) {
+      const formData = {};
+      if (reg.order_number) {
+        formData.order_number = reg.order_number;
+      }
+      if (reg.booth_prices || reg.booth_price) {
+        formData.booth_prices = reg.booth_prices || reg.booth_price;
+      }
+      if (reg.host_user) {
+        formData.host_user = reg.host_user;
+      }
+      if (reg.booth_name) {
+        formData.booth_name = reg.booth_name;
+      }
+      if (this.profile.phone || this.profile.username) {
+        formData.users_mobile_phone = this.profile.phone || "";
+      }
+      if (this.profile.nickname || this.profile.username) {
+        formData.user_name = this.profile.nickname || this.profile.username;
+      }
+      $.db.set("form", formData);
+      this.$router.push({
+        path: "/refund_request/view",
+      });
     },
     tagClassByText(value, fallback = "is-primary") {
       const text = String(value || "");
@@ -644,6 +690,12 @@ export default {
   color: var(--color_text_soft);
   font-size: 0.88rem;
   flex-shrink: 0;
+}
+
+.profile_refund_btn {
+  margin-top: 4px;
+  font-size: 12px;
+  padding: 4px 10px;
 }
 
 @media (max-width: 1280px) {

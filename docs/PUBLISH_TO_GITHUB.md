@@ -5,8 +5,8 @@
 请先确认这些本地敏感文件没有被加入 Git：
 
 - `src/main/resources/application-local.yml`
-- `src/main/resources/static/admin/.env.local`
-- `src/main/resources/static/home/.env.local`
+- `frontend/admin/.env.local`
+- `frontend/home/.env.local`
 - `maven/`
 - `target/`
 - `logs/`

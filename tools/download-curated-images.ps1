@@ -3,7 +3,7 @@ $ErrorActionPreference = "Stop"
 
 $projectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $staticRoot = Join-Path $projectRoot "src\main\resources\static"
-$themeRoot = Join-Path $projectRoot "src\main\resources\static\home\public\img\theme"
+$themeRoot = Join-Path $projectRoot "frontend\home\public\img\theme"
 
 $headers = @{
   "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0 Safari/537.36"

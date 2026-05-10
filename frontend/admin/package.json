@@ -1,5 +1,5 @@
 {
-  "name": "client_home",
+  "name": "project_admin",
   "version": "0.1.0",
   "private": true,
   "engines": {
@@ -19,20 +19,17 @@
     "@vue/composition-api": "^1.7.2",
     "aieditor": "^1.4.1",
     "axios": "^0.21.1",
-    "bootstrap-vue": "^2.21.2",
     "core-js": "^3.6.5",
-    "dijkstrajs": "^1.0.3",
     "element-ui": "^2.15.0",
-    "jquery": "^3.6.0",
+    "jquery": "^3.5.1",
     "jsencrypt": "^3.3.2",
-    "mammoth": "^1.9.1",
     "markdown-it": "^14.1.0",
-    "project-root": "file:../../../../..",
     "qrcode": "^1.5.4",
+    "regenerator-runtime": "^0.14.1",
+    "register-service-worker": "^1.7.1",
     "vue": "^2.6.11",
-    "vue-demi": "^0.14.6",
+    "vue-demi": "^0.14.10",
     "vue-json-excel": "^0.3.0",
-    "vue-piczoom": "^1.0.6",
     "vue-quill-editor": "^3.0.6",
     "vue-router": "^3.2.0",
     "vuex": "^3.4.0",
@@ -40,22 +37,10 @@
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "~4.5.0",
+    "@vue/cli-plugin-pwa": "~4.5.0",
     "@vue/cli-plugin-router": "~4.5.0",
     "@vue/cli-plugin-vuex": "~4.5.0",
     "@vue/cli-service": "~4.5.0",
-    "less": "^3.0.4",
-    "less-loader": "^5.0.0",
-    "sass": "^1.77.8",
-    "sass-loader": "^10.5.2",
-    "swiper": "^3.4.2",
     "vue-template-compiler": "^2.6.11"
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead"
-  ],
-  "overrides": {
-    "node-sass": "npm:sass@^1.77.8"
   }
 }

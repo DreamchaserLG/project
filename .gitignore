@@ -11,13 +11,15 @@ logs/
 .npm-cache/
 src/main/resources/static/**/dist/
 src/main/resources/static/**/node_modules/
+frontend/**/dist/
+frontend/**/node_modules/
 
 # Local runtime configuration
 src/main/resources/application-local.yml
-src/main/resources/static/admin/.env.local
-src/main/resources/static/home/.env.local
-src/main/resources/static/**/.env.local
-src/main/resources/static/**/.env.*.local
+frontend/admin/.env.local
+frontend/home/.env.local
+frontend/**/.env.local
+frontend/**/.env.*.local
 maven/
 
 # Local data and debug artifacts

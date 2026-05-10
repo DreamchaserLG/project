@@ -3,7 +3,7 @@ const path = require("path");
 const { spawn } = require("child_process");
 
 const rootDir = path.resolve(__dirname, "..");
-const homeDir = path.join(rootDir, "src", "main", "resources", "static", "home");
+const homeDir = path.join(rootDir, "frontend", "home");
 const npmCacheDir = path.join(rootDir, ".npm-cache");
 
 function quoteWindowsArg(value) {

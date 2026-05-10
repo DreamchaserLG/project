@@ -50,10 +50,12 @@ CREATE DATABASE project_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode
 
 再按顺序导入：
 
-1. `project.sql`
-2. `project_patch_local.sql`
-3. `refresh_demo_content.sql`
-4. `waitlist_demo.sql`（如果要演示候补）
+```bash
+mysql -u root -p project_db < sql/project.sql
+mysql -u root -p project_db < sql/project_patch_local.sql
+mysql -u root -p project_db < sql/refresh_demo_content.sql
+mysql -u root -p project_db < sql/waitlist_demo.sql
+```
 
 ### 3. 配置后端
 
@@ -82,8 +84,8 @@ copy src\main\resources\application-local.example.yml src\main\resources\applica
 复制：
 
 ```bash
-copy src\main\resources\static\admin\.env.example src\main\resources\static\admin\.env.local
-copy src\main\resources\static\home\.env.example src\main\resources\static\home\.env.local
+copy frontend\admin\.env.example frontend\admin\.env.local
+copy frontend\home\.env.example frontend\home\.env.local
 ```
 
 确认：
@@ -109,15 +111,17 @@ copy src\main\resources\static\home\.env.example src\main\resources\static\home\
 管理员端：
 
 ```bash
-npm.cmd --prefix src\main\resources\static\admin install --legacy-peer-deps
-npm.cmd --prefix src\main\resources\static\admin run dev
+cd frontend\admin
+npm install --legacy-peer-deps
+npm run dev
 ```
 
 用户端：
 
 ```bash
-npm.cmd --prefix src\main\resources\static\home install --legacy-peer-deps
-npm.cmd --prefix src\main\resources\static\home run dev
+cd frontend\home
+npm install --legacy-peer-deps
+npm run dev
 ```
 
 ## 常见问题

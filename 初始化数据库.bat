@@ -30,7 +30,7 @@ if "%MYSQL_PASSWORD%"=="" (
 )
 
 echo [INFO] Importing project.sql...
-"%MYSQL_EXE%" -h %MYSQL_HOST% -P %MYSQL_PORT% -u%MYSQL_USER% -p%MYSQL_PASSWORD% --default-character-set=utf8mb4 < "%~dp0project.sql"
+"%MYSQL_EXE%" -h %MYSQL_HOST% -P %MYSQL_PORT% -u%MYSQL_USER% -p%MYSQL_PASSWORD% --default-character-set=utf8mb4 < "%~dp0sql\project.sql"
 if errorlevel 1 (
   echo [ERROR] Failed to import project.sql.
   echo Please verify the MySQL username and password in this file.
@@ -39,7 +39,7 @@ if errorlevel 1 (
 )
 
 echo [INFO] Importing project_patch_local.sql...
-"%MYSQL_EXE%" -h %MYSQL_HOST% -P %MYSQL_PORT% -u%MYSQL_USER% -p%MYSQL_PASSWORD% --default-character-set=utf8mb4 < "%~dp0project_patch_local.sql"
+"%MYSQL_EXE%" -h %MYSQL_HOST% -P %MYSQL_PORT% -u%MYSQL_USER% -p%MYSQL_PASSWORD% --default-character-set=utf8mb4 < "%~dp0sql\project_patch_local.sql"
 if errorlevel 1 (
   echo [ERROR] Failed to import project_patch_local.sql.
   echo Please verify the MySQL username and password in this file.

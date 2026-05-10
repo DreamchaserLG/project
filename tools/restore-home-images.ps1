@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
 $projectRoot = Split-Path -Parent $PSScriptRoot
-$sourceDir = Join-Path $projectRoot "src\main\resources\static\home\public\img"
+$sourceDir = Join-Path $projectRoot "frontend\home\public\img"
 $targetDir = Join-Path $projectRoot "src\main\resources\static"
 
 $sourceFiles = @(
