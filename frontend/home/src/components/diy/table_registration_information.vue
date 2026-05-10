@@ -167,7 +167,16 @@
               <span v-else-if="scope.row['examine_state'] == '未通过'" style="color: gray;">未通过</span>
             </template>
           </el-table-column>
-        
+
+          <el-table-column label="越级状态" prop="escalate_state" min-width="120">
+            <template slot-scope="scope">
+              <span v-if="scope.row['escalate_state'] === '已越级'" style="color: #E6A23C;">
+                <i class="el-icon-top"></i> 已越级
+              </span>
+              <span v-else style="color: #C0C4CC;">-</span>
+            </template>
+          </el-table-column>
+
                   <el-table-column label="审核回复" prop="examine_reply">
           </el-table-column>
         
@@ -246,8 +255,14 @@
               <span>支付</span>
             </el-button>
 												<el-button class="el-button el-button--small is-plain el-button--warning" style="margin: 5px !important;" size="small" @click="cancelRegistration(scope.row)" v-if="canCancel(scope.row)">
-				<span>{{ normalizeRegistrationStatus(scope.row) === '候补中' ? '取消候补' : '取消报名' }}</span>
-			</el-button>
+			<span>{{ normalizeRegistrationStatus(scope.row) === '候补中' ? '取消候补' : '取消报名' }}</span>
+		</el-button>
+								<el-button class="el-button el-button--small is-plain el-button--danger" style="margin: 5px !important;" size="small" @click="escalateToAdmin(scope.row)" v-if="canEscalate(scope.row)">
+			<span>申请越级审核</span>
+		</el-button>
+											  	<span v-if="scope.row.escalate_state === '已越级'" style="color: #E6A23C; font-size: 12px; margin-left: 4px;">
+			<i class="el-icon-warning"></i> 已越级至管理员
+		</span>
                                             		  		  		  	<el-button class="el-button el-button--small is-plain el-button--default" style="margin: 5px !important;" size="small" @click="changeSigning(scope.row, scope.$index)" v-if="$check_option('/registration_information/table', 'examine')  ">
 		  		<span>审核</span>
 		  	</el-button>
@@ -502,6 +517,33 @@
           return this.normalizeRegistrationStatus(row) === "已报名" && row.pay_state !== "已支付";
         }
         return this.normalizeRegistrationStatus(row) === "已报名";
+      },
+      canEscalate(row) {
+        var status = this.normalizeRegistrationStatus(row);
+        return status !== "已取消"
+          && row.examine_state === "未通过"
+          && row.escalate_state !== "已越级";
+      },
+      escalateToAdmin(row) {
+        var _this = this;
+        this.$prompt("请填写越级审核原因（可选）", "申请越级审核", {
+          confirmButtonText: "提交申请",
+          cancelButtonText: "取消",
+          inputPlaceholder: "主办用户审核未通过，申请管理员重新审核",
+          inputValue: "主办用户审核未通过，申请管理员重新审核",
+          type: "warning"
+        }).then(function(ref) {
+          _this.$post("~/api/registration/waitlist/escalate/" + row.registration_information_id, {
+            reason: ref.value || "主办用户审核未通过，申请管理员重新审核"
+          }, function(json) {
+            if (json && json.result) {
+              _this.$toast(json.result.message || "申请成功", "success");
+              _this.get_list();
+            } else if (json && json.error) {
+              _this.$toast(json.error.message, "danger");
+            }
+          });
+        }).catch(function() {});
       },
       cancelRegistration(row) {
         this.$confirm(

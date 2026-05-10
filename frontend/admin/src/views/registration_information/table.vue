@@ -16,15 +16,24 @@
 								</el-form-item>
 				</el-col>
 																									<el-col :xs="24" :sm="24" :lg="8" class="el_form_search_wrap">
-					<el-form-item label="审核状态">
-						<el-select v-model="query.examine_state">
-							<el-option value="">全部</el-option>
-							<el-option value="未审核">未审核</el-option>
-								<el-option value="已通过">已通过</el-option>
-							<el-option value="未通过">未通过</el-option>
-						</el-select>
-					</el-form-item>
-				</el-col>
+				<el-form-item label="审核状态">
+					<el-select v-model="query.examine_state">
+						<el-option value="">全部</el-option>
+						<el-option value="未审核">未审核</el-option>
+							<el-option value="已通过">已通过</el-option>
+						<el-option value="未通过">未通过</el-option>
+					</el-select>
+				</el-form-item>
+			</el-col>
+			<el-col :xs="24" :sm="24" :lg="8" class="el_form_search_wrap">
+				<el-form-item label="越级状态">
+					<el-select v-model="query.escalate_state">
+						<el-option value="">全部</el-option>
+						<el-option value="已越级">已越级</el-option>
+						<el-option value="未越级">未越级</el-option>
+					</el-select>
+				</el-form-item>
+			</el-col>
 				<el-col :xs="24" :sm="24" :lg="8" class="el_form_search_wrap">
 					<el-form-item label="支付状态">
 						<el-select v-model="query.pay_state">
@@ -155,6 +164,20 @@
 					<span v-else-if="scope.row['examine_state'] == '审核中'" style="color: orange;">审核中</span>
 					<span v-else-if="scope.row['examine_state'] == '已通过'" style="color: green;">已通过</span>
 					<span v-else-if="scope.row['examine_state'] == '未通过'" style="color: gray;">未通过</span>
+				</template>
+			</el-table-column>
+			<el-table-column label="越级状态" prop="escalate_state" min-width="120">
+				<template slot-scope="scope">
+					<el-tag v-if="scope.row['escalate_state'] === '已越级'" type="warning" size="mini" effect="dark">
+						<i class="el-icon-top"></i> 已越级
+					</el-tag>
+					<span v-else style="color: #C0C4CC;">-</span>
+				</template>
+			</el-table-column>
+			<el-table-column label="越级原因" prop="escalate_reason" min-width="200">
+				<template slot-scope="scope">
+					<span v-if="scope.row['escalate_reason']">{{ scope.row['escalate_reason'] }}</span>
+					<span v-else style="color: #C0C4CC;">-</span>
 				</template>
 			</el-table-column>
 			<el-table-column label="审核回复" prop="examine_reply" min-width="200">
@@ -422,6 +445,7 @@
 								"order_number": "",
 																			"user_name": "",
 														"examine_state":"",
+					"escalate_state":"",
 					"pay_state":"",
 					"login_time": "",
 					"create_time": "",
@@ -726,20 +750,31 @@
 
 			get_list_before(param){
 				var user_group = this.user.user_group;
+				var sqlwhere = "(";
 				if(user_group != "管理员"){
-						let sqlwhere = "(";
-																														if(user_group=="主办用户"){
-						sqlwhere+= "host_user = " + this.user.user_id + " or ";
+																													if(user_group=="主办用户"){
+					sqlwhere+= "host_user = " + this.user.user_id + " or ";
+				}
+																											if(user_group=="普通用户"){
+					sqlwhere+= "enrolled_user = " + this.user.user_id + " or ";
+				}
+				sqlwhere = sqlwhere.substr(0,sqlwhere.length-4);
+				sqlwhere += ")";
+				}
+
+				if(param["escalate_state"] === "未越级"){
+					delete param["escalate_state"];
+					var escalateWhere = "(escalate_state IS NULL OR escalate_state = '')";
+					if(sqlwhere.length > 1){
+						sqlwhere = sqlwhere + " AND " + escalateWhere;
+					}else{
+						sqlwhere = escalateWhere;
 					}
-																												if(user_group=="普通用户"){
-						sqlwhere+= "enrolled_user = " + this.user.user_id + " or ";
-					}
-																																													if (sqlwhere.length>1){
-						sqlwhere = sqlwhere.substr(0,sqlwhere.length-4);
-						sqlwhere += ")";
-						param["sqlwhere"] = sqlwhere;
-					}
-					}
+				}
+
+				if(sqlwhere.length > 1){
+					param["sqlwhere"] = sqlwhere;
+				}
 				return param;
 			},
 

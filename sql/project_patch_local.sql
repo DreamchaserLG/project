@@ -19,7 +19,9 @@ ALTER TABLE `registration_information`
   ADD COLUMN IF NOT EXISTS `waitlist_no` int DEFAULT NULL COMMENT '候补序号',
   ADD COLUMN IF NOT EXISTS `waitlist_time` datetime DEFAULT NULL COMMENT '候补时间',
   ADD COLUMN IF NOT EXISTS `confirm_time` datetime DEFAULT NULL COMMENT '确认时间',
-  ADD COLUMN IF NOT EXISTS `cancel_time` datetime DEFAULT NULL COMMENT '取消时间';
+  ADD COLUMN IF NOT EXISTS `cancel_time` datetime DEFAULT NULL COMMENT '取消时间',
+  ADD COLUMN IF NOT EXISTS `escalate_state` varchar(16) DEFAULT '' COMMENT '越级状态',
+  ADD COLUMN IF NOT EXISTS `escalate_reason` varchar(500) DEFAULT '' COMMENT '越级原因';
 
 SET @drop_registration_booth_number_index = (
   SELECT IF(

@@ -1024,4 +1024,77 @@ public class RegistrationWaitlistService {
         result.put("waitlist_no", waitlistNo);
         return result;
     }
+
+    public boolean isEscalatable(Map<String, Object> registration) {
+        if (registration == null) {
+            return false;
+        }
+        String status = normalizeStatus(registration.get("registration_status"));
+        String examineState = safeString(registration.get("examine_state"));
+        String escalateState = safeString(registration.get("escalate_state"));
+        return !STATUS_CANCELLED.equals(status)
+                && EXAMINE_REJECTED.equals(examineState)
+                && !"已越级".equals(escalateState);
+    }
+
+    @Transactional
+    public Map<String, Object> escalateToAdmin(Integer registrationId, String reason) {
+        if (registrationId == null || registrationId <= 0) {
+            return fail("报名记录不存在");
+        }
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT registration_information_id, examine_state, registration_status, escalate_state, enrolled_user " +
+                        "FROM registration_information WHERE registration_information_id = ? FOR UPDATE",
+                registrationId
+        );
+
+        if (rows.isEmpty()) {
+            return fail("报名记录不存在");
+        }
+
+        Map<String, Object> registration = rows.get(0);
+        Integer enrolledUser = toInt(registration.get("enrolled_user"));
+        String currentExamineState = safeString(registration.get("examine_state"));
+        String currentEscalateState = safeString(registration.get("escalate_state"));
+        String currentStatus = normalizeStatus(registration.get("registration_status"));
+
+        if (STATUS_CANCELLED.equals(currentStatus)) {
+            return fail("已取消的报名不能申请越级审核");
+        }
+
+        if (!EXAMINE_REJECTED.equals(currentExamineState)) {
+            return fail("只有审核未通过的记录才能申请越级审核");
+        }
+
+        if ("已越级".equals(currentEscalateState)) {
+            return fail("该记录已经申请过越级审核");
+        }
+
+        String escalateReason = safeString(reason);
+        if (escalateReason.isEmpty()) {
+            escalateReason = "主办用户审核未通过，申请管理员重新审核";
+        }
+
+        jdbcTemplate.update(
+                "UPDATE registration_information " +
+                        "SET examine_state = ?, examine_reply = ?, escalate_state = ?, escalate_reason = ?, " +
+                        "registration_status = CASE WHEN registration_status = '已取消' THEN registration_status ELSE registration_status END, " +
+                        "update_time = NOW() " +
+                        "WHERE registration_information_id = ?",
+                EXAMINE_PENDING,
+                "",
+                "已越级",
+                escalateReason,
+                registrationId
+        );
+
+        Map<String, Object> result = new HashMap<String, Object>();
+        result.put("ok", true);
+        result.put("registration_information_id", registrationId);
+        result.put("examine_state", EXAMINE_PENDING);
+        result.put("escalate_state", "已越级");
+        result.put("message", "已提交越级审核申请，等待管理员审核");
+        return result;
+    }
 }

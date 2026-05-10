@@ -1,4 +1,4 @@
-CREATE DATABASE IF NOT EXISTS project_db CHARACTER SET utf8;
+﻿CREATE DATABASE IF NOT EXISTS project_db CHARACTER SET utf8;
 USE `project_db`;
 DROP TABLE IF EXISTS `slides`;
 CREATE TABLE `slides` (
@@ -364,22 +364,24 @@ CREATE TABLE `registration_information`(registration_information_id int(11) NOT 
 `pay_type` varchar(16) DEFAULT '' comment '支付类型: 微信、支付宝、网银',
 `travel_confirmation_limit_times` int(8) DEFAULT 1 NOT NULL comment '行程确认限制次数',
 `refund_request_limit_times` int(8) DEFAULT 1 NOT NULL comment '退款申请限制次数',
+`escalate_state` varchar(16) DEFAULT '' comment '越级状态',
+`escalate_reason` varchar(500) DEFAULT '' comment '越级原因',
 `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
 `create_by` int(11) DEFAULT '1' NOT NULL comment '创建用户ID',
 `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
 PRIMARY KEY (registration_information_id))ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 comment '报名信息';
-insert into `registration_information` values (1,'ORD004','D02','CONF-2024-A01','全球美食文化节',0,'机遇之门','主题展馆',1,0,'周涛','15500155000',1,'','报名备注1','','','已通过','','未支付','支付宝',1,1,'2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
-insert into `registration_information` values (2,'ORD011','D01','EXPO2024-005','国际动漫游戏展',0,'合作桥梁','商务洽谈区',2,0,'张伟','13400134000',2,'','报名备注2','','','已通过','','未支付','支付宝',1,1,'2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
-insert into `registration_information` values (3,'ORD003','B02','EXPO2024-003','世界旅游文化展',0,'品牌舞台','特装展位',3,0,'刘洋','13500135000',3,'','报名备注3','','','已通过','','未支付','支付宝',1,1,'2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
-insert into `registration_information` values (4,'ORD007','D03','SHOW-24-B003','数字艺术创意展',0,'灵感交汇','角位展位',4,0,'黄俊','15900159000',4,'','报名备注4','','','已通过','','未支付','支付宝',1,1,'2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
-insert into `registration_information` values (5,'ORD006','B03','SHOW-24-B001','国际教育装备展',0,'行业灯塔','双层展位',5,0,'吴雪','15600156000',5,'','报名备注5','','','已通过','','未支付','支付宝',1,1,'2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
-insert into `registration_information` values (6,'ORD010','C03','EXPO2024-002','时尚设计潮流展',0,'未来视窗','岛型展位',6,0,'陈静','13900139000',6,'','报名备注6','','','已通过','','未支付','支付宝',1,1,'2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
-insert into `registration_information` values (7,'ORD008','A02','CONF-2024-A02','新能源汽车科技展',0,'专业领地','互动体验区',7,0,'徐强','15800158000',7,'','报名备注7','','','已通过','','未支付','支付宝',1,1,'2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
-insert into `registration_information` values (8,'ORD002','A03','SHOW-24-B002','智慧城市创新展',0,'梦想工坊','迷你展位',8,0,'孙悦','13600136000',8,'','报名备注8','','','已通过','','未支付','支付宝',1,1,'2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
-insert into `registration_information` values (9,'ORD005','C02','CONF-2024-A03','绿色地球环保展',0,'科技方舟','创意装置展位',9,0,'王芳','15700157000',9,'','报名备注9','','','已通过','','未支付','支付宝',1,1,'2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
-insert into `registration_information` values (10,'ORD012','C01','EXPO2024-006','健康生活博览会',0,'精英荟萃','产品发布台',10,0,'赵磊','18800188000',10,'','报名备注10','','','已通过','','未支付','支付宝',1,1,'2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
-insert into `registration_information` values (11,'ORD009','B01','EXPO2024-004','传统文化复兴展',0,'智慧聚点','半岛型展位',11,0,'林娜','13700137000',11,'','报名备注11','','','已通过','','未支付','支付宝',1,1,'2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
-insert into `registration_information` values (12,'ORD001','A01','EXPO2024-001','未来科技生活展',0,'创新前沿','标准展位',12,0,'李明','13800138000',12,'','报名备注12','','','已通过','','未支付','支付宝',1,1,'2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
+insert into `registration_information` values (1,'ORD004','D02','CONF-2024-A01','全球美食文化节',0,'机遇之门','主题展馆',1,0,'周涛','15500155000',1,'','报名备注1','','','已通过','','未支付','支付宝',1,1,'','','2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
+insert into `registration_information` values (2,'ORD011','D01','EXPO2024-005','国际动漫游戏展',0,'合作桥梁','商务洽谈区',2,0,'张伟','13400134000',2,'','报名备注2','','','已通过','','未支付','支付宝',1,1,'','','2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
+insert into `registration_information` values (3,'ORD003','B02','EXPO2024-003','世界旅游文化展',0,'品牌舞台','特装展位',3,0,'刘洋','13500135000',3,'','报名备注3','','','已通过','','未支付','支付宝',1,1,'','','2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
+insert into `registration_information` values (4,'ORD007','D03','SHOW-24-B003','数字艺术创意展',0,'灵感交汇','角位展位',4,0,'黄俊','15900159000',4,'','报名备注4','','','已通过','','未支付','支付宝',1,1,'','','2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
+insert into `registration_information` values (5,'ORD006','B03','SHOW-24-B001','国际教育装备展',0,'行业灯塔','双层展位',5,0,'吴雪','15600156000',5,'','报名备注5','','','已通过','','未支付','支付宝',1,1,'','','2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
+insert into `registration_information` values (6,'ORD010','C03','EXPO2024-002','时尚设计潮流展',0,'未来视窗','岛型展位',6,0,'陈静','13900139000',6,'','报名备注6','','','已通过','','未支付','支付宝',1,1,'','','2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
+insert into `registration_information` values (7,'ORD008','A02','CONF-2024-A02','新能源汽车科技展',0,'专业领地','互动体验区',7,0,'徐强','15800158000',7,'','报名备注7','','','已通过','','未支付','支付宝',1,1,'','','2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
+insert into `registration_information` values (8,'ORD002','A03','SHOW-24-B002','智慧城市创新展',0,'梦想工坊','迷你展位',8,0,'孙悦','13600136000',8,'','报名备注8','','','已通过','','未支付','支付宝',1,1,'','','2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
+insert into `registration_information` values (9,'ORD005','C02','CONF-2024-A03','绿色地球环保展',0,'科技方舟','创意装置展位',9,0,'王芳','15700157000',9,'','报名备注9','','','已通过','','未支付','支付宝',1,1,'','','2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
+insert into `registration_information` values (10,'ORD012','C01','EXPO2024-006','健康生活博览会',0,'精英荟萃','产品发布台',10,0,'赵磊','18800188000',10,'','报名备注10','','','已通过','','未支付','支付宝',1,1,'','','2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
+insert into `registration_information` values (11,'ORD009','B01','EXPO2024-004','传统文化复兴展',0,'智慧聚点','半岛型展位',11,0,'林娜','13700137000',11,'','报名备注11','','','已通过','','未支付','支付宝',1,1,'','','2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
+insert into `registration_information` values (12,'ORD001','A01','EXPO2024-001','未来科技生活展',0,'创新前沿','标准展位',12,0,'李明','13800138000',12,'','报名备注12','','','已通过','','未支付','支付宝',1,1,'','','2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
 
 DROP TABLE IF EXISTS `travel_confirmation`;
 CREATE TABLE `travel_confirmation`(travel_confirmation_id int(11) NOT NULL AUTO_INCREMENT COMMENT '行程确认ID',

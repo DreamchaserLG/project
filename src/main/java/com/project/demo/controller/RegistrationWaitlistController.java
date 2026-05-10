@@ -96,6 +96,21 @@ public class RegistrationWaitlistController {
         return success(list);
     }
 
+    @PostMapping("/escalate/{registrationId}")
+    @Transactional
+    public Map<String, Object> escalate(@PathVariable Integer registrationId,
+                                        @RequestBody(required = false) Map<String, Object> body) {
+        String reason = "";
+        if (body != null && body.get("reason") != null) {
+            reason = String.valueOf(body.get("reason"));
+        }
+        Map<String, Object> result = registrationWaitlistService.escalateToAdmin(registrationId, reason);
+        if (!isOk(result)) {
+            return error(result);
+        }
+        return success(result);
+    }
+
     private boolean isOk(Map<String, Object> result) {
         return result != null && Boolean.TRUE.equals(result.get("ok"));
     }
