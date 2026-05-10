@@ -442,6 +442,16 @@ router.beforeEach((to, from, next) => {
     if (token) {
         $.db.set("token", token, 120);
     }
+
+    const authFreePaths = ['/login', '/forgot', '/register', '/filePreview'];
+    if (!authFreePaths.includes(to.path)) {
+        const userGroup = sessionStorage.getItem("user_group") || "";
+        if (userGroup === "普通用户") {
+            next("/login");
+            return;
+        }
+    }
+
     next();
 })
 

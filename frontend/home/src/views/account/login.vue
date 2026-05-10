@@ -100,7 +100,7 @@ export default {
   data() {
     return {
       showPassword: false,
-      allow_user: ["管理员", "普通用户", "主办用户"],
+      allow_user: ["普通用户"],
       form: {
         username: "",
         password: "",
@@ -168,7 +168,7 @@ export default {
             });
             this.$message.success("登录成功");
           } else {
-            this.$message.error("当前账号不支持在用户端登录");
+            this.$message.error("管理员和主办用户请使用管理端登录");
           }
         } else if (res.error) {
           this.$message.error(res.error.message);

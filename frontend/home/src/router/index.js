@@ -410,6 +410,12 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
+  const userGroup = sessionStorage.getItem("user_group") || "";
+  if (userGroup === "管理员" || userGroup === "主办用户") {
+    next("/");
+    return;
+  }
+
   next();
 });
 

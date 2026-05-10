@@ -602,31 +602,45 @@ export default {
 .profile_info_rows {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.95rem 1rem;
+  gap: 0.75rem 1rem;
 }
 
 .profile_info_row {
-  display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
+  display: flex;
   align-items: center;
-  min-height: 68px;
-  padding: 0 1.05rem;
-  border-radius: 20px;
+  min-height: 52px;
+  padding: 0.6rem 1rem;
+  border-radius: 16px;
   background: #fff;
   border: 1px solid rgba(15, 54, 80, 0.08);
-  box-shadow: 0 8px 20px rgba(16, 34, 51, 0.05);
+  box-shadow: 0 4px 12px rgba(16, 34, 51, 0.04);
 }
 
 .profile_info_row label {
-  color: var(--color_text_soft);
-  font-size: 0.84rem;
-  font-weight: 700;
+  flex-shrink: 0;
+  width: 80px;
+  color: var(--color_text_sub);
+  font-size: 0.88rem;
+  text-align: right;
+  padding-right: 0.8rem;
+  border-right: 1px solid rgba(15, 54, 80, 0.08);
+  margin-right: 0.8rem;
 }
 
 .profile_info_row span {
+  flex: 1;
+  min-width: 0;
   color: var(--color_text);
-  line-height: 1.7;
-  word-break: break-all;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .profile_info_rows {
+    grid-template-columns: 1fr;
+  }
 }
 
 .profile_record_grid {
@@ -645,8 +659,9 @@ export default {
 }
 
 .profile_record_list {
-  display: grid;
-  gap: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
 }
 
 .profile_record_item {
@@ -654,11 +669,12 @@ export default {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1rem 1.05rem;
-  border-radius: 20px;
+  padding: 0.85rem 1rem;
+  border-radius: 16px;
   background: #fff;
   border: 1px solid rgba(15, 54, 80, 0.08);
-  box-shadow: 0 8px 18px rgba(16, 34, 51, 0.05);
+  box-shadow: 0 4px 12px rgba(16, 34, 51, 0.04);
+  transition: transform 0.2s ease;
 }
 
 .profile_record_main {
