@@ -216,7 +216,7 @@
     padding: 2.6rem 2.6rem 2.4rem;
     background:
         linear-gradient(145deg, rgba(9, 57, 67, 0.95), rgba(15, 95, 108, 0.76)),
-        url("../../../public/img/bg.jpg") center/cover no-repeat;
+        url("/img/bg.jpg") center/cover no-repeat;
     color: #fff;
 }
 
