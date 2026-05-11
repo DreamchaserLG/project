@@ -68,7 +68,7 @@
 	}
 
 	.el-input {
-		max-width: 22.625rem;
+		max-width: 100%;
 	}
 
 	body {
@@ -94,9 +94,8 @@
 
 	article {
 		box-sizing: border-box;
-		height: calc(100vh - 60px);
+		min-height: calc(100vh - 60px);
 		padding: 0;
-		overflow-y: auto;
 		background: #f4f7fb;
 	}
 
@@ -261,7 +260,7 @@
 	}
 
 	.el-col {
-		overflow: hidden;
+		overflow: visible;
 	}
 
 	.ql-picker {
