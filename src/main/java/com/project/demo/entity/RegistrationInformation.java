@@ -104,6 +104,13 @@ public class RegistrationInformation implements Serializable {
     @TableField(value = "cancel_time")
     private Timestamp cancel_time;
 
+    // 越级状态
+    @TableField(value = "escalate_state")
+    private String escalate_state;
+
+    // 越级原因
+    @TableField(value = "escalate_reason")
+    private String escalate_reason;
 
     // 审核回复
     @TableField(value = "examine_reply")

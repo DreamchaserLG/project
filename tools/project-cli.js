@@ -1,5 +1,6 @@
 const { spawn } = require("child_process");
 const path = require("path");
+const { getConfiguredBackendPort } = require("./backend-support");
 
 const rootDir = path.resolve(__dirname, "..");
 const adminDir = path.join(rootDir, "frontend", "admin");
@@ -80,7 +81,7 @@ const env = {
   ...process.env,
   SPRING_PROFILES_ACTIVE: process.env.SPRING_PROFILES_ACTIVE || "local",
   VUE_APP_API_BASE_URL: process.env.VUE_APP_API_BASE_URL || "/",
-  VUE_APP_DEV_PROXY_TARGET: process.env.VUE_APP_DEV_PROXY_TARGET || "http://127.0.0.1:5000",
+  VUE_APP_DEV_PROXY_TARGET: process.env.VUE_APP_DEV_PROXY_TARGET || `http://127.0.0.1:${getConfiguredBackendPort()}`,
   HTTP_PROXY: "",
   HTTPS_PROXY: "",
   ALL_PROXY: "",
