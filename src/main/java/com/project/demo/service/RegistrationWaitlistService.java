@@ -104,8 +104,9 @@ public class RegistrationWaitlistService {
                         "examine_state, examine_reply, pay_state, pay_type, " +
                         "travel_confirmation_limit_times, refund_request_limit_times, " +
                         "extra, source_table, source_id, source_user_id, create_by, " +
-                        "registration_status, waitlist_no, waitlist_time, confirm_time, cancel_time, create_time, update_time" +
-                        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
+                        "registration_status, waitlist_no, waitlist_time, confirm_time, cancel_time, create_time, update_time"
+                        +
+                        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
                 orderNumber,
                 boothNumber,
                 exhibitionNumber,
@@ -137,8 +138,7 @@ public class RegistrationWaitlistService {
                 waitlistNo,
                 STATUS_WAITLIST.equals(registrationStatus) ? new java.sql.Timestamp(System.currentTimeMillis()) : null,
                 STATUS_CONFIRMED.equals(registrationStatus) ? new java.sql.Timestamp(System.currentTimeMillis()) : null,
-                null
-        );
+                null);
 
         Integer registrationId = findRegistrationIdByOrderNumber(orderNumber);
 
@@ -176,11 +176,11 @@ public class RegistrationWaitlistService {
         }
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT registration_information_id, source_table, source_id, registration_status, pay_state, examine_state, " +
+                "SELECT registration_information_id, source_table, source_id, registration_status, pay_state, examine_state, "
+                        +
                         "enrolled_user, host_user, booth_name " +
                         "FROM registration_information WHERE registration_information_id = ? FOR UPDATE",
-                registrationId
-        );
+                registrationId);
 
         if (rows.isEmpty()) {
             return fail("报名记录不存在");
@@ -212,11 +212,11 @@ public class RegistrationWaitlistService {
 
         if (!SOURCE_TABLE_BOOTH.equals(sourceTable) || boothId == null || boothId <= 0) {
             jdbcTemplate.update(
-                    "UPDATE registration_information SET registration_status = ?, cancel_time = NOW(), update_time = NOW() " +
+                    "UPDATE registration_information SET registration_status = ?, cancel_time = NOW(), update_time = NOW() "
+                            +
                             "WHERE registration_information_id = ?",
                     STATUS_CANCELLED,
-                    registrationId
-            );
+                    registrationId);
 
             notifyCancellation(enrolledUser, hostUser, boothName, reason, false, null);
 
@@ -232,11 +232,11 @@ public class RegistrationWaitlistService {
         if (STATUS_WAITLIST.equals(currentStatus)) {
             jdbcTemplate.update(
                     "UPDATE registration_information " +
-                            "SET registration_status = ?, waitlist_no = NULL, cancel_time = NOW(), update_time = NOW() " +
+                            "SET registration_status = ?, waitlist_no = NULL, cancel_time = NOW(), update_time = NOW() "
+                            +
                             "WHERE registration_information_id = ?",
                     STATUS_CANCELLED,
-                    registrationId
-            );
+                    registrationId);
 
             renumberWaitlist(boothId);
             notifyCancellation(enrolledUser, hostUser, boothName, reason, true, null);
@@ -266,15 +266,15 @@ public class RegistrationWaitlistService {
 
         jdbcTemplate.update(
                 "UPDATE registration_information " +
-                        "SET registration_status = ?, waitlist_no = NULL, examine_state = ?, examine_reply = ?, pay_state = ?, " +
+                        "SET registration_status = ?, waitlist_no = NULL, examine_state = ?, examine_reply = ?, pay_state = ?, "
+                        +
                         "cancel_time = NOW(), update_time = NOW() " +
                         "WHERE registration_information_id = ?",
                 STATUS_CANCELLED,
                 nextExamineState,
                 safeString(remark),
                 nextPayState,
-                registrationId
-        );
+                registrationId);
 
         Integer promotedId = promoteOneWaitlist(boothId);
         renumberWaitlist(boothId);
@@ -307,11 +307,11 @@ public class RegistrationWaitlistService {
         }
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT registration_information_id, source_table, source_id, registration_status, waitlist_no, pay_state, " +
+                "SELECT registration_information_id, source_table, source_id, registration_status, waitlist_no, pay_state, "
+                        +
                         "examine_state, enrolled_user, host_user, booth_name " +
                         "FROM registration_information WHERE registration_information_id = ? FOR UPDATE",
-                registrationId
-        );
+                registrationId);
 
         if (rows.isEmpty()) {
             return fail("报名记录不存在");
@@ -330,8 +330,7 @@ public class RegistrationWaitlistService {
                             "WHERE registration_information_id = ?",
                     examineState,
                     reply,
-                    registrationId
-            );
+                    registrationId);
             return auditResult(
                     registrationId,
                     currentStatus,
@@ -339,8 +338,7 @@ public class RegistrationWaitlistService {
                     currentPayState,
                     examineState,
                     false,
-                    EXAMINE_REJECTED.equals(examineState) ? "已审核不通过" : "审核成功"
-            );
+                    EXAMINE_REJECTED.equals(examineState) ? "已审核不通过" : "审核成功");
         }
 
         if (EXAMINE_PENDING.equals(examineState)) {
@@ -349,8 +347,7 @@ public class RegistrationWaitlistService {
                             "WHERE registration_information_id = ?",
                     EXAMINE_PENDING,
                     reply,
-                    registrationId
-            );
+                    registrationId);
             renumberWaitlist(boothId);
             return auditResult(
                     registrationId,
@@ -359,21 +356,20 @@ public class RegistrationWaitlistService {
                     currentPayState,
                     EXAMINE_PENDING,
                     false,
-                    "审核状态已更新为未审核"
-            );
+                    "审核状态已更新为未审核");
         }
 
         if (EXAMINE_REJECTED.equals(examineState)) {
             if (STATUS_WAITLIST.equals(currentStatus)) {
                 jdbcTemplate.update(
-                        "UPDATE registration_information SET examine_state = ?, examine_reply = ?, registration_status = ?, " +
+                        "UPDATE registration_information SET examine_state = ?, examine_reply = ?, registration_status = ?, "
+                                +
                                 "waitlist_no = NULL, waitlist_time = NULL, cancel_time = NOW(), update_time = NOW() " +
                                 "WHERE registration_information_id = ?",
                         EXAMINE_REJECTED,
                         reply,
                         STATUS_CANCELLED,
-                        registrationId
-                );
+                        registrationId);
                 renumberWaitlist(boothId);
                 return auditResult(
                         registrationId,
@@ -382,8 +378,7 @@ public class RegistrationWaitlistService {
                         currentPayState,
                         EXAMINE_REJECTED,
                         false,
-                        "已审核不通过"
-                );
+                        "已审核不通过");
             }
             return cancelRegistration(registrationId, "瀹℃牳鏈€氳繃", reply);
         }
@@ -402,15 +397,16 @@ public class RegistrationWaitlistService {
 
         if (canConfirm) {
             jdbcTemplate.update(
-                    "UPDATE registration_information SET examine_state = ?, examine_reply = ?, registration_status = ?, " +
-                            "waitlist_no = NULL, waitlist_time = NULL, cancel_time = NULL, confirm_time = IFNULL(confirm_time, NOW()), " +
+                    "UPDATE registration_information SET examine_state = ?, examine_reply = ?, registration_status = ?, "
+                            +
+                            "waitlist_no = NULL, waitlist_time = NULL, cancel_time = NULL, confirm_time = IFNULL(confirm_time, NOW()), "
+                            +
                             "pay_state = ?, update_time = NOW() WHERE registration_information_id = ?",
                     EXAMINE_APPROVED,
                     reply,
                     STATUS_CONFIRMED,
                     nextPayState,
-                    registrationId
-            );
+                    registrationId);
             renumberWaitlist(boothId);
             return auditResult(
                     registrationId,
@@ -421,8 +417,7 @@ public class RegistrationWaitlistService {
                     PAY_UNPAID.equals(nextPayState),
                     PAY_UNPAID.equals(nextPayState)
                             ? "已审核通过，订单已转为正式报名，请用户尽快支付"
-                            : "已审核通过，订单已转为正式报名"
-            );
+                            : "已审核通过，订单已转为正式报名");
         }
 
         Integer assignedWaitlistNo = nextWaitlistNo(boothId);
@@ -435,8 +430,7 @@ public class RegistrationWaitlistService {
                 STATUS_WAITLIST,
                 assignedWaitlistNo,
                 PAY_UNPAID,
-                registrationId
-        );
+                registrationId);
         renumberWaitlist(boothId);
 
         Integer currentWaitlistNo = queryWaitlistNo(registrationId);
@@ -448,8 +442,7 @@ public class RegistrationWaitlistService {
                 EXAMINE_APPROVED,
                 false,
                 "已审核通过，当前名额已满，订单进入候补队列" +
-                        (currentWaitlistNo == null ? "" : "，当前候补第 " + currentWaitlistNo + " 位")
-        );
+                        (currentWaitlistNo == null ? "" : "，当前候补第 " + currentWaitlistNo + " 位"));
     }
 
     @Transactional
@@ -473,8 +466,10 @@ public class RegistrationWaitlistService {
         result.put("confirmed_count", confirmedCount);
         result.put("waitlist_count", waitlistCount);
         result.put("is_full", capacity > 0 && confirmedCount >= capacity);
-        result.put("my_registration_id", myRegistration == null ? null : toInt(myRegistration.get("registration_information_id")));
-        result.put("my_status", myRegistration == null ? "" : normalizeStatus(myRegistration.get("registration_status")));
+        result.put("my_registration_id",
+                myRegistration == null ? null : toInt(myRegistration.get("registration_information_id")));
+        result.put("my_status",
+                myRegistration == null ? "" : normalizeStatus(myRegistration.get("registration_status")));
         result.put("my_waitlist_no", myRegistration == null ? null : toInt(myRegistration.get("waitlist_no")));
         result.put("my_pay_state", myRegistration == null ? "" : safeString(myRegistration.get("pay_state")));
         result.put("message", capacity <= 0
@@ -495,12 +490,14 @@ public class RegistrationWaitlistService {
 
         return jdbcTemplate.queryForList(
                 "SELECT registration_information_id, order_number, enrolled_user, user_name, users_mobile_phone, " +
-                        "registration_status, waitlist_no, waitlist_time, confirm_time, cancel_time, create_time, pay_state, examine_state " +
+                        "registration_status, waitlist_no, waitlist_time, confirm_time, cancel_time, create_time, pay_state, examine_state "
+                        +
                         "FROM registration_information " +
                         "WHERE source_table = ? AND source_id = ? " +
                         "ORDER BY " +
                         "CASE " +
-                        "WHEN registration_status = ? OR registration_status IS NULL OR registration_status = '' THEN 1 " +
+                        "WHEN registration_status = ? OR registration_status IS NULL OR registration_status = '' THEN 1 "
+                        +
                         "WHEN registration_status = ? THEN 2 " +
                         "WHEN registration_status = ? THEN 3 " +
                         "ELSE 4 END, " +
@@ -509,8 +506,7 @@ public class RegistrationWaitlistService {
                 boothId,
                 STATUS_CONFIRMED,
                 STATUS_WAITLIST,
-                STATUS_CANCELLED
-        );
+                STATUS_CANCELLED);
     }
 
     public String validatePaymentAllowed(Integer registrationId) {
@@ -564,14 +560,14 @@ public class RegistrationWaitlistService {
                 "SELECT COUNT(*) FROM travel_confirmation WHERE source_table = ? AND source_id = ?",
                 Integer.class,
                 SOURCE_TABLE_REGISTRATION,
-                registrationId
-        );
+                registrationId);
 
         if (used != null && limit > 0 && used >= limit) {
             return "当前报名记录的行程确认次数已达上限";
         }
 
-        if (PAY_REFUNDING.equals(safeString(registration.get("pay_state"))) || PAY_REFUNDED.equals(safeString(registration.get("pay_state")))) {
+        if (PAY_REFUNDING.equals(safeString(registration.get("pay_state")))
+                || PAY_REFUNDED.equals(safeString(registration.get("pay_state")))) {
             return "退款中的报名不能提交行程确认";
         }
 
@@ -602,8 +598,7 @@ public class RegistrationWaitlistService {
                 Integer.class,
                 SOURCE_TABLE_REGISTRATION,
                 registrationId,
-                EXAMINE_PENDING
-        );
+                EXAMINE_PENDING);
 
         if (pending != null && pending > 0) {
             return "当前报名记录已有待审核退款申请";
@@ -614,8 +609,7 @@ public class RegistrationWaitlistService {
                 "SELECT COUNT(*) FROM refund_request WHERE source_table = ? AND source_id = ?",
                 Integer.class,
                 SOURCE_TABLE_REGISTRATION,
-                registrationId
-        );
+                registrationId);
 
         if (used != null && limit > 0 && used >= limit) {
             return "当前报名记录的退款申请次数已达上限";
@@ -628,16 +622,14 @@ public class RegistrationWaitlistService {
         jdbcTemplate.update(
                 "UPDATE registration_information SET pay_state = ?, update_time = NOW() WHERE registration_information_id = ?",
                 PAY_REFUNDING,
-                registrationId
-        );
+                registrationId);
     }
 
     public void restorePaidStateAfterRefundReject(Integer registrationId) {
         jdbcTemplate.update(
                 "UPDATE registration_information SET pay_state = ?, update_time = NOW() WHERE registration_information_id = ?",
                 PAY_PAID,
-                registrationId
-        );
+                registrationId);
     }
 
     public Map<String, Object> getRegistration(Integer registrationId) {
@@ -646,23 +638,24 @@ public class RegistrationWaitlistService {
         }
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT registration_information_id, order_number, source_table, source_id, source_user_id, enrolled_user, " +
-                        "host_user, booth_name, registration_status, waitlist_no, pay_state, examine_state, examine_reply, " +
+                "SELECT registration_information_id, order_number, source_table, source_id, source_user_id, enrolled_user, "
+                        +
+                        "host_user, booth_name, registration_status, waitlist_no, pay_state, examine_state, examine_reply, "
+                        +
                         "travel_confirmation_limit_times, refund_request_limit_times " +
                         "FROM registration_information WHERE registration_information_id = ? LIMIT 1",
-                registrationId
-        );
+                registrationId);
 
         return rows.isEmpty() ? null : rows.get(0);
     }
 
     private Map<String, Object> getBoothForUpdate(Integer boothId) {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT booth_information_id, booth_number, exhibitionconvention_number, exhibition_theme, host_user, " +
+                "SELECT booth_information_id, booth_number, exhibitionconvention_number, exhibition_theme, host_user, "
+                        +
                         "booth_name, booth_type, booth_prices, registration_information_limit_times " +
                         "FROM booth_information WHERE booth_information_id = ? FOR UPDATE",
-                boothId
-        );
+                boothId);
 
         return rows.isEmpty() ? null : rows.get(0);
     }
@@ -672,14 +665,14 @@ public class RegistrationWaitlistService {
                 "SELECT registration_information_id, registration_status, waitlist_no, pay_state " +
                         "FROM registration_information " +
                         "WHERE source_table = ? AND source_id = ? AND enrolled_user = ? " +
-                        "AND (registration_status = ? OR registration_status = ? OR registration_status IS NULL OR registration_status = '') " +
+                        "AND (registration_status = ? OR registration_status = ? OR registration_status IS NULL OR registration_status = '') "
+                        +
                         "ORDER BY registration_information_id DESC LIMIT 1",
                 SOURCE_TABLE_BOOTH,
                 boothId,
                 userId,
                 STATUS_CONFIRMED,
-                STATUS_WAITLIST
-        );
+                STATUS_WAITLIST);
 
         return rows.isEmpty() ? null : rows.get(0);
     }
@@ -692,8 +685,7 @@ public class RegistrationWaitlistService {
                 Integer.class,
                 SOURCE_TABLE_BOOTH,
                 boothId,
-                STATUS_CONFIRMED
-        );
+                STATUS_CONFIRMED);
         return count == null ? 0 : count;
     }
 
@@ -705,8 +697,7 @@ public class RegistrationWaitlistService {
                 SOURCE_TABLE_BOOTH,
                 boothId,
                 STATUS_WAITLIST,
-                EXAMINE_APPROVED
-        );
+                EXAMINE_APPROVED);
         return count == null ? 0 : count;
     }
 
@@ -718,8 +709,7 @@ public class RegistrationWaitlistService {
                 SOURCE_TABLE_BOOTH,
                 boothId,
                 STATUS_WAITLIST,
-                EXAMINE_APPROVED
-        );
+                EXAMINE_APPROVED);
         return next == null ? 1 : next;
     }
 
@@ -751,8 +741,7 @@ public class RegistrationWaitlistService {
                 SOURCE_TABLE_BOOTH,
                 boothId,
                 STATUS_WAITLIST,
-                EXAMINE_APPROVED
-        );
+                EXAMINE_APPROVED);
 
         if (waitRows.isEmpty()) {
             return null;
@@ -767,8 +756,7 @@ public class RegistrationWaitlistService {
                 STATUS_CONFIRMED,
                 EXAMINE_APPROVED,
                 PAY_UNPAID,
-                promotedId
-        );
+                promotedId);
         return promotedId;
     }
 
@@ -780,8 +768,7 @@ public class RegistrationWaitlistService {
                 SOURCE_TABLE_BOOTH,
                 boothId,
                 STATUS_WAITLIST,
-                EXAMINE_APPROVED
-        );
+                EXAMINE_APPROVED);
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                 "SELECT registration_information_id FROM registration_information " +
                         "WHERE source_table = ? AND source_id = ? AND registration_status = ? AND examine_state = ? " +
@@ -789,16 +776,14 @@ public class RegistrationWaitlistService {
                 SOURCE_TABLE_BOOTH,
                 boothId,
                 STATUS_WAITLIST,
-                EXAMINE_APPROVED
-        );
+                EXAMINE_APPROVED);
 
         for (int i = 0; i < rows.size(); i++) {
             Integer registrationId = toInt(rows.get(i).get("registration_information_id"));
             jdbcTemplate.update(
                     "UPDATE registration_information SET waitlist_no = ?, update_time = NOW() WHERE registration_information_id = ?",
                     i + 1,
-                    registrationId
-            );
+                    registrationId);
         }
     }
 
@@ -809,19 +794,18 @@ public class RegistrationWaitlistService {
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                 "SELECT waitlist_no FROM registration_information WHERE registration_information_id = ? LIMIT 1",
-                registrationId
-        );
+                registrationId);
 
         return rows.isEmpty() ? null : toInt(rows.get(0).get("waitlist_no"));
     }
 
     private Map<String, Object> auditResult(Integer registrationId,
-                                            String registrationStatus,
-                                            Integer waitlistNo,
-                                            String payState,
-                                            String examineState,
-                                            boolean needPay,
-                                            String message) {
+            String registrationStatus,
+            Integer waitlistNo,
+            String payState,
+            String examineState,
+            boolean needPay,
+            String message) {
         Map<String, Object> result = new HashMap<String, Object>();
         result.put("ok", true);
         result.put("registration_information_id", registrationId);
@@ -835,7 +819,8 @@ public class RegistrationWaitlistService {
     }
 
     private String keepOrResetPayState(String currentPayState) {
-        if (PAY_PAID.equals(currentPayState) || PAY_REFUNDING.equals(currentPayState) || PAY_REFUNDED.equals(currentPayState)) {
+        if (PAY_PAID.equals(currentPayState) || PAY_REFUNDING.equals(currentPayState)
+                || PAY_REFUNDED.equals(currentPayState)) {
             return currentPayState;
         }
         return PAY_UNPAID;
@@ -845,22 +830,22 @@ public class RegistrationWaitlistService {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                 "SELECT registration_information_id FROM registration_information WHERE order_number = ? " +
                         "ORDER BY registration_information_id DESC LIMIT 1",
-                orderNumber
-        );
+                orderNumber);
 
         return rows.isEmpty() ? null : toInt(rows.get(0).get("registration_information_id"));
     }
 
     private String buildOrderNumber(Object rawValue) {
         String value = safeString(rawValue);
-        if (!value.isEmpty() && !"null".equalsIgnoreCase(value) && !"undefined".equalsIgnoreCase(value) && !"nan".equalsIgnoreCase(value)) {
+        if (!value.isEmpty() && !"null".equalsIgnoreCase(value) && !"undefined".equalsIgnoreCase(value)
+                && !"nan".equalsIgnoreCase(value)) {
             return value;
         }
         return "BM" + System.currentTimeMillis() + ThreadLocalRandom.current().nextInt(1000, 9999);
     }
 
     private void notifyRegistrationCreated(Integer enrolledUser, Integer hostUser, String boothName,
-                                           String registrationStatus, Integer waitlistNo) {
+            String registrationStatus, Integer waitlistNo) {
         String boothDisplay = boothDisplayName(boothName);
         if (STATUS_WAITLIST.equals(registrationStatus)) {
             String suffix = waitlistNo == null ? "" : "，当前排位第 " + waitlistNo + " 位。";
@@ -874,7 +859,7 @@ public class RegistrationWaitlistService {
     }
 
     private void notifyCancellation(Integer enrolledUser, Integer hostUser, String boothName,
-                                    String reason, boolean waitlistCancelled, Integer promotedId) {
+            String reason, boolean waitlistCancelled, Integer promotedId) {
         String boothDisplay = boothDisplayName(boothName);
         if (waitlistCancelled) {
             notifyUser(enrolledUser, "候补状态变更", boothDisplay + "的候补资格已取消。");
@@ -929,8 +914,7 @@ public class RegistrationWaitlistService {
                 title,
                 "1",
                 "通知",
-                content
-        );
+                content);
     }
 
     private String boothDisplayName(String boothName) {
@@ -985,7 +969,8 @@ public class RegistrationWaitlistService {
 
         try {
             String value = String.valueOf(rawValue).trim();
-            if (value.isEmpty() || "null".equalsIgnoreCase(value) || "undefined".equalsIgnoreCase(value) || "nan".equalsIgnoreCase(value)) {
+            if (value.isEmpty() || "null".equalsIgnoreCase(value) || "undefined".equalsIgnoreCase(value)
+                    || "nan".equalsIgnoreCase(value)) {
                 return null;
             }
             return Integer.valueOf(value);
@@ -1001,7 +986,8 @@ public class RegistrationWaitlistService {
 
         try {
             String value = String.valueOf(rawValue).trim();
-            if (value.isEmpty() || "null".equalsIgnoreCase(value) || "undefined".equalsIgnoreCase(value) || "nan".equalsIgnoreCase(value)) {
+            if (value.isEmpty() || "null".equalsIgnoreCase(value) || "undefined".equalsIgnoreCase(value)
+                    || "nan".equalsIgnoreCase(value)) {
                 return null;
             }
             return Double.valueOf(value);
@@ -1017,7 +1003,8 @@ public class RegistrationWaitlistService {
         return result;
     }
 
-    private Map<String, Object> fail(String message, Integer registrationId, String registrationStatus, Integer waitlistNo) {
+    private Map<String, Object> fail(String message, Integer registrationId, String registrationStatus,
+            Integer waitlistNo) {
         Map<String, Object> result = fail(message);
         result.put("registration_information_id", registrationId);
         result.put("registration_status", registrationStatus);
@@ -1044,10 +1031,10 @@ public class RegistrationWaitlistService {
         }
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT registration_information_id, examine_state, registration_status, escalate_state, enrolled_user " +
+                "SELECT registration_information_id, examine_state, registration_status, escalate_state, enrolled_user "
+                        +
                         "FROM registration_information WHERE registration_information_id = ? FOR UPDATE",
-                registrationId
-        );
+                registrationId);
 
         if (rows.isEmpty()) {
             return fail("报名记录不存在");
@@ -1079,15 +1066,15 @@ public class RegistrationWaitlistService {
         jdbcTemplate.update(
                 "UPDATE registration_information " +
                         "SET examine_state = ?, examine_reply = ?, escalate_state = ?, escalate_reason = ?, " +
-                        "registration_status = CASE WHEN registration_status = '已取消' THEN registration_status ELSE registration_status END, " +
+                        "registration_status = CASE WHEN registration_status = '已取消' THEN registration_status ELSE registration_status END, "
+                        +
                         "update_time = NOW() " +
                         "WHERE registration_information_id = ?",
                 EXAMINE_PENDING,
                 "",
                 "已越级",
                 escalateReason,
-                registrationId
-        );
+                registrationId);
 
         Map<String, Object> result = new HashMap<String, Object>();
         result.put("ok", true);
