@@ -209,6 +209,7 @@ module.exports = {
   explodedDir,
   explodeJar,
   getExplodedClasspath,
+  getConfiguredBackendPort,
   rootDir,
   runCommand,
   runtimeJarPath,

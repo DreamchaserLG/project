@@ -1,4 +1,4 @@
-﻿CREATE DATABASE IF NOT EXISTS project_db CHARACTER SET utf8;
+CREATE DATABASE IF NOT EXISTS project_db CHARACTER SET utf8;
 USE `project_db`;
 DROP TABLE IF EXISTS `slides`;
 CREATE TABLE `slides` (
@@ -64,6 +64,68 @@ CREATE TABLE `message_inform` (
   PRIMARY KEY (`message_inform_id`) USING BTREE,
   KEY `user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='通知记录';
+DROP TABLE IF EXISTS `nav`;
+CREATE TABLE `nav` (
+  `nav_id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'navigation ID',
+  `name` varchar(128) DEFAULT NULL COMMENT 'navigation name',
+  `location` varchar(32) DEFAULT NULL COMMENT 'location',
+  `target` varchar(32) DEFAULT NULL COMMENT 'target',
+  `url` varchar(255) DEFAULT NULL COMMENT 'url',
+  `father_id` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'parent ID',
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created time',
+  `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated time',
+  PRIMARY KEY (`nav_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='navigation';
+DROP TABLE IF EXISTS `releasing_notices`;
+CREATE TABLE `releasing_notices` (
+  `notices_id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'notice ID',
+  `title` varchar(255) DEFAULT NULL COMMENT 'title',
+  `type` varchar(128) DEFAULT NULL COMMENT 'type',
+  `content` text COMMENT 'content',
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created time',
+  `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated time',
+  PRIMARY KEY (`notices_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='released notices';
+DROP TABLE IF EXISTS `sensitive_vocabulary`;
+CREATE TABLE `sensitive_vocabulary` (
+  `sensitive_vocabulary_id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'sensitive vocabulary ID',
+  `sensitive_vocabulary` varchar(255) NOT NULL COMMENT 'sensitive word',
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created time',
+  `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated time',
+  PRIMARY KEY (`sensitive_vocabulary_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='sensitive vocabulary';
+DROP TABLE IF EXISTS `subject_user_answer`;
+CREATE TABLE `subject_user_answer` (
+  `subject_user_answer_id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'answer ID',
+  `exam_id` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'exam ID',
+  `user_id` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'user ID',
+  `nickname` varchar(128) DEFAULT NULL COMMENT 'nickname',
+  `score` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT 'score',
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created time',
+  `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated time',
+  PRIMARY KEY (`subject_user_answer_id`) USING BTREE,
+  KEY `idx_subject_user_answer_exam` (`exam_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='subject user answer';
+DROP TABLE IF EXISTS `customer_chat_group`;
+CREATE TABLE `customer_chat_group` (
+  `customer_chat_group_id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'chat group ID',
+  `member` text COMMENT 'member json',
+  `unread_count` int(11) NOT NULL DEFAULT '0' COMMENT 'unread count',
+  `last_read_time` datetime DEFAULT NULL COMMENT 'last read time',
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created time',
+  `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated time',
+  PRIMARY KEY (`customer_chat_group_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='customer chat group';
+DROP TABLE IF EXISTS `customer_chat_log`;
+CREATE TABLE `customer_chat_log` (
+  `customer_chat_log_id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'chat log ID',
+  `customer_chat_id` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'chat group ID',
+  `content` longtext COMMENT 'chat content',
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created time',
+  `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated time',
+  PRIMARY KEY (`customer_chat_log_id`) USING BTREE,
+  UNIQUE KEY `uk_customer_chat_log_chat` (`customer_chat_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='customer chat log';
 DROP TABLE IF EXISTS `user_group`;
 CREATE TABLE `user_group` (
   `group_id` mediumint(8) unsigned NOT NULL AUTO_INCREMENT COMMENT '用户组ID',
