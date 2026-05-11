@@ -1,73 +1,104 @@
 <template>
 	<div class="page_dashboard">
-		<div class="dashboard_header">
-			<div class="dashboard_welcome">
-				<h1 class="dashboard_title">欢迎回来，{{ user.nickname || user.username }}</h1>
-				<p class="dashboard_subtitle">
-					当前身份：{{ user_group }} · {{ $toTime(user.login_time, "yyyy-MM-dd hh:mm:ss") }} 登录
-				</p>
-			</div>
-			<div class="dashboard_actions">
-				<el-button size="small" @click="$router.push('/user/info')">修改资料</el-button>
-				<el-button size="small" @click="$router.push('/user/password')">修改密码</el-button>
-				<el-button size="small" type="danger" @click="sign_out_fun">退出</el-button>
+		<div class="dashboard_welcome_card">
+			<div class="welcome_content">
+				<div class="welcome_text">
+					<h1 class="welcome_title">欢迎回来，{{ user.nickname || user.username }}</h1>
+					<p class="welcome_sub">
+						<span class="welcome_badge">{{ user_group }}</span>
+						<span class="welcome_time">{{ $toTime(user.login_time, "yyyy-MM-dd hh:mm:ss") }} 登录</span>
+					</p>
+				</div>
+				<div class="welcome_actions">
+					<el-button size="small" icon="el-icon-user" @click="$router.push('/user/info')">修改资料</el-button>
+					<el-button size="small" icon="el-icon-key" @click="$router.push('/user/password')">修改密码</el-button>
+					<el-button size="small" type="danger" icon="el-icon-switch-button" @click="sign_out_fun">退出</el-button>
+				</div>
 			</div>
 		</div>
 
-		<div class="dashboard_overview" v-if="dataScreen && dataScreen.length">
+		<div class="dashboard_stats" v-if="dataScreen && dataScreen.length">
 			<div
 				v-for="(item, idx) in dataScreen"
 				:key="idx"
-				class="overview_card"
+				class="stat_card"
 				@click="$router.push('/' + item.field + '/table')"
 			>
-				<div class="overview_card_number">{{ item.value }}</div>
-				<div class="overview_card_label">{{ item.label }}</div>
+				<div class="stat_icon" :class="'stat_icon_' + (idx % 4)">
+					<i :class="statIcons[idx % statIcons.length]"></i>
+				</div>
+				<div class="stat_info">
+					<div class="stat_number">{{ item.value }}</div>
+					<div class="stat_label">{{ item.label }}</div>
+				</div>
 			</div>
 		</div>
 
-		<div class="dashboard_body">
-			<el-row :gutter="16">
-				<el-col :xs="24" :sm="16" style="margin-bottom: 16px;">
-					<div class="section_title">快捷操作</div>
-					<quickMenu />
-				</el-col>
-				<el-col :xs="24" :sm="8" style="margin-bottom: 16px;">
-					<div class="section_title">用户信息</div>
-					<div class="user_card">
-						<div class="user_card_avatar">
+		<div class="dashboard_grid">
+			<div class="grid_left">
+				<div class="panel">
+					<div class="panel_header">
+						<span class="panel_title"><i class="el-icon-s-grid"></i> 快捷操作</span>
+					</div>
+					<div class="panel_body">
+						<quickMenu />
+					</div>
+				</div>
+
+				<div class="panel">
+					<div class="panel_header">
+						<span class="panel_title"><i class="el-icon-s-data"></i> 最近用户行为</span>
+						<el-button type="text" size="small" @click="$router.push('/user_track_log/table')">查看全部 <i class="el-icon-arrow-right"></i></el-button>
+					</div>
+					<div class="panel_body">
+						<el-table :data="recentTracks" size="small" v-loading="tracksLoading" style="width: 100%;">
+							<el-table-column prop="username" label="用户" width="120">
+								<template slot-scope="{ row }">
+									<span class="track_user">{{ row.username }}</span>
+								</template>
+							</el-table-column>
+							<el-table-column prop="event_name" label="事件" width="120">
+								<template slot-scope="{ row }">
+									<el-tag :type="eventTagType(row.event_name)" size="mini" effect="light">{{ row.event_name }}</el-tag>
+								</template>
+							</el-table-column>
+							<el-table-column prop="page" label="页面" min-width="180" show-overflow-tooltip />
+							<el-table-column prop="create_time" label="时间" width="160">
+								<template slot-scope="{ row }">
+									<span class="track_time">{{ row.create_time }}</span>
+								</template>
+							</el-table-column>
+						</el-table>
+					</div>
+				</div>
+			</div>
+
+			<div class="grid_right">
+				<div class="panel">
+					<div class="panel_header">
+						<span class="panel_title"><i class="el-icon-user"></i> 用户信息</span>
+					</div>
+					<div class="panel_body user_card">
+						<div class="user_avatar">
 							<img :src="$fullUrl(user.avatar)" alt="" />
 						</div>
-						<div class="user_card_info">
-							<p class="user_card_name">{{ user.nickname || user.username }}</p>
-							<p class="user_card_role">{{ user_group }}</p>
+						<div class="user_info">
+							<h3 class="user_name">{{ user.nickname || user.username }}</h3>
+							<p class="user_role">{{ user_group }}</p>
 						</div>
-						<div class="user_card_meta">
-							<p><label>用户ID</label><span>{{ user.user_id }}</span></p>
-							<p><label>上次登录</label><span>{{ $toTime(user.login_time, "yyyy-MM-dd") }}</span></p>
+						<div class="user_meta">
+							<div class="meta_item">
+								<span class="meta_label">用户ID</span>
+								<span class="meta_value">{{ user.user_id }}</span>
+							</div>
+							<div class="meta_item">
+								<span class="meta_label">上次登录</span>
+								<span class="meta_value">{{ $toTime(user.login_time, "yyyy-MM-dd") }}</span>
+							</div>
 						</div>
 					</div>
-				</el-col>
-			</el-row>
-
-			<el-row :gutter="16">
-				<el-col :span="24">
-					<div class="section_title">
-						最近用户行为
-						<el-button type="text" @click="$router.push('/user_track_log/table')" style="float: right; font-size: 13px;">查看全部</el-button>
-					</div>
-					<el-table :data="recentTracks" border size="small" v-loading="tracksLoading" style="width: 100%;">
-						<el-table-column prop="username" label="用户" width="120" />
-						<el-table-column prop="event_name" label="事件" width="140">
-							<template slot-scope="{ row }">
-								<el-tag :type="eventTagType(row.event_name)" size="mini">{{ row.event_name }}</el-tag>
-							</template>
-						</el-table-column>
-						<el-table-column prop="page" label="页面" min-width="200" show-overflow-tooltip />
-						<el-table-column prop="create_time" label="时间" width="170" />
-					</el-table>
-				</el-col>
-			</el-row>
+				</div>
+			</div>
 		</div>
 	</div>
 </template>
@@ -84,6 +115,12 @@ export default {
 			dataScreen: [],
 			recentTracks: [],
 			tracksLoading: false,
+			statIcons: [
+				'el-icon-user',
+				'el-icon-document',
+				'el-icon-picture-outline',
+				'el-icon-bell'
+			],
 		};
 	},
 	created() {
@@ -154,129 +191,283 @@ export default {
 
 <style scoped>
 .page_dashboard {
-	padding: 0;
+	padding: 24px;
 	max-width: 1200px;
 	margin: 0 auto;
 }
 
-.dashboard_header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 20px;
-	padding: 20px 24px;
-	border-radius: 20px;
-	background: linear-gradient(135deg, #0f3650 0%, #43b8b8 50%, #0d7a5c 100%);
-	color: #fff;
-	box-shadow: 0 8px 24px rgba(16, 34, 51, 0.18);
+.dashboard_welcome_card {
+	background: linear-gradient(135deg, #093943 0%, #0f5f6c 60%, #1d7a86 100%);
+	border-radius: 16px;
+	padding: 28px 32px;
+	margin-bottom: 24px;
+	box-shadow: 0 8px 32px rgba(9, 57, 67, 0.2);
 }
 
-.dashboard_title {
+.welcome_content {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.welcome_title {
 	font-size: 22px;
 	font-weight: 700;
-	margin-bottom: 4px;
+	color: #fff;
+	margin: 0 0 8px;
+	letter-spacing: 0.5px;
 }
 
-.dashboard_subtitle {
-	font-size: 14px;
-	opacity: 0.85;
+.welcome_sub {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin: 0;
 }
 
-.dashboard_overview {
+.welcome_badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 3px 12px;
+	border-radius: 999px;
+	background: rgba(77, 232, 224, 0.2);
+	color: #4de8e0;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.welcome_time {
+	color: rgba(255, 255, 255, 0.7);
+	font-size: 13px;
+}
+
+.welcome_actions .el-button {
+	border-color: rgba(255, 255, 255, 0.3);
+	color: #fff;
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 8px;
+}
+
+.welcome_actions .el-button:hover {
+	background: rgba(255, 255, 255, 0.2);
+	border-color: rgba(255, 255, 255, 0.5);
+}
+
+.welcome_actions .el-button--danger {
+	background: rgba(239, 68, 68, 0.3);
+	border-color: rgba(239, 68, 68, 0.4);
+}
+
+.welcome_actions .el-button--danger:hover {
+	background: rgba(239, 68, 68, 0.5);
+}
+
+.dashboard_stats {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 	gap: 16px;
-	margin-bottom: 20px;
+	margin-bottom: 24px;
 }
 
-.overview_card {
+.stat_card {
 	background: #fff;
-	border: 1px solid rgba(15, 54, 80, 0.08);
-	border-radius: 16px;
-	padding: 20px 16px;
-	text-align: center;
-	box-shadow: 0 4px 12px rgba(16, 34, 51, 0.04);
+	border-radius: 14px;
+	padding: 20px;
+	display: flex;
+	align-items: center;
+	gap: 16px;
 	cursor: pointer;
-	transition: transform 0.2s ease, box-shadow 0.2s ease;
+	transition: all 0.3s ease;
+	border: 1px solid #eef2f7;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-.overview_card:hover {
-	transform: translateY(-3px);
-	box-shadow: 0 8px 20px rgba(16, 34, 51, 0.1);
+.stat_card:hover {
+	transform: translateY(-4px);
+	box-shadow: 0 12px 24px rgba(9, 57, 67, 0.12);
+	border-color: transparent;
 }
 
-.overview_card_number {
+.stat_icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 52px;
+	height: 52px;
+	border-radius: 14px;
+	font-size: 24px;
+	flex-shrink: 0;
+}
+
+.stat_icon_0 {
+	background: linear-gradient(135deg, #eaf7f7, #d4f0f0);
+	color: #0f5f6c;
+}
+
+.stat_icon_1 {
+	background: linear-gradient(135deg, #f7ead4, #f0ddb8);
+	color: #c9872f;
+}
+
+.stat_icon_2 {
+	background: linear-gradient(135deg, #e8f4fd, #d0e8fa);
+	color: #1d7a86;
+}
+
+.stat_icon_3 {
+	background: linear-gradient(135deg, #fde8e8, #fad0d0);
+	color: #c0392b;
+}
+
+.stat_number {
 	font-size: 24px;
 	font-weight: 700;
-	color: #10344e;
-	margin-bottom: 4px;
+	color: #093943;
+	line-height: 1.2;
 }
 
-.overview_card_label {
+.stat_label {
 	font-size: 13px;
-	color: var(--color_text_sub);
+	color: #8c9ba5;
+	margin-top: 2px;
 }
 
-.section_title {
-	font-size: 16px;
+.dashboard_grid {
+	display: grid;
+	grid-template-columns: 1fr 340px;
+	gap: 24px;
+}
+
+.panel {
+	background: #fff;
+	border-radius: 14px;
+	border: 1px solid #eef2f7;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+	margin-bottom: 20px;
+	overflow: hidden;
+}
+
+.panel_header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 16px 20px;
+	border-bottom: 1px solid #f0f3f7;
+}
+
+.panel_title {
+	font-size: 15px;
 	font-weight: 600;
-	color: #10344e;
-	margin-bottom: 12px;
-	padding-bottom: 8px;
-	border-bottom: 1px solid rgba(15, 54, 80, 0.08);
+	color: #093943;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.panel_title i {
+	color: #0f5f6c;
+	font-size: 18px;
+}
+
+.panel_body {
+	padding: 20px;
+}
+
+.grid_left .panel_body {
+	padding: 16px 20px;
 }
 
 .user_card {
-	background: #fff;
-	border-radius: 16px;
-	padding: 20px;
-	border: 1px solid rgba(15, 54, 80, 0.08);
-	box-shadow: 0 4px 12px rgba(16, 34, 51, 0.04);
-}
-
-.user_card_avatar {
 	text-align: center;
-	margin-bottom: 12px;
+	padding: 24px 20px;
 }
 
-.user_card_avatar img {
-	width: 60px;
-	height: 60px;
+.user_avatar {
+	margin-bottom: 16px;
+}
+
+.user_avatar img {
+	width: 72px;
+	height: 72px;
 	border-radius: 50%;
 	object-fit: cover;
-	border: 3px solid rgba(67, 184, 184, 0.3);
+	border: 4px solid #eaf7f7;
+	box-shadow: 0 4px 12px rgba(15, 95, 108, 0.15);
 }
 
-.user_card_info {
-	text-align: center;
-	margin-bottom: 12px;
+.user_info {
+	margin-bottom: 20px;
 }
 
-.user_card_name {
-	font-size: 16px;
+.user_name {
+	font-size: 18px;
 	font-weight: 600;
-	color: #10344e;
+	color: #093943;
+	margin: 0 0 4px;
 }
 
-.user_card_role {
+.user_role {
 	font-size: 13px;
-	color: var(--color_text_sub);
-	margin-top: 4px;
+	color: #8c9ba5;
+	margin: 0;
 }
 
-.user_card_meta p {
+.user_meta {
+	border-top: 1px solid #f0f3f7;
+	padding-top: 16px;
+}
+
+.meta_item {
 	display: flex;
 	justify-content: space-between;
-	padding: 6px 0;
+	align-items: center;
+	padding: 8px 0;
+}
+
+.meta_label {
 	font-size: 13px;
-	border-bottom: 1px solid rgba(15, 54, 80, 0.04);
+	color: #8c9ba5;
 }
 
-.user_card_meta label {
-	color: var(--color_text_sub);
+.meta_value {
+	font-size: 13px;
+	font-weight: 500;
+	color: #093943;
 }
 
-.user_card_meta span {
-	color: #10344e;
+.track_user {
+	font-weight: 500;
+	color: #093943;
+}
+
+.track_time {
+	font-size: 12px;
+	color: #8c9ba5;
+}
+
+@media (max-width: 992px) {
+	.dashboard_grid {
+		grid-template-columns: 1fr;
+	}
+
+	.welcome_content {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 16px;
+	}
+
+	.dashboard_stats {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+@media (max-width: 576px) {
+	.page_dashboard {
+		padding: 16px;
+	}
+
+	.dashboard_stats {
+		grid-template-columns: 1fr;
+	}
 }
 </style>

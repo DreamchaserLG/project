@@ -1,463 +1,290 @@
 <template>
-    <article class="auth_login_page">
-        <div class="auth_login_shell">
-            <section class="auth_login_visual">
-                <span class="auth_kicker">Admin Portal</span>
-                <h1>会展管理系统</h1>
-                <p>管理端用于会展业务的后台管理，包括用户管理、会展信息维护、报名审核、退款处理和数据追踪。</p>
-
-                <div class="auth_visual_cards">
-                    <article class="auth_visual_card">
-                        <strong>多角色管理</strong>
-                        <span>支持管理员与主办用户登录，按权限分配功能模块，确保数据安全与职责分离。</span>
-                    </article>
-                    <article class="auth_visual_card">
-                        <strong>业务全流程</strong>
-                        <span>从会展创建到展位管理、报名审核、行程确认、退款处理的完整业务闭环。</span>
-                    </article>
-                    <article class="auth_visual_card">
-                        <strong>数据追踪</strong>
-                        <span>实时追踪用户行为日志，助力运营分析和系统优化决策。</span>
-                    </article>
-                </div>
-            </section>
-
-            <section class="auth_login_panel">
-                <div class="auth_login_header">
-                    <span class="auth_kicker">Admin Login</span>
-                    <h2>管理端登录</h2>
-                    <p>请使用管理员或主办用户账号登录。</p>
-                </div>
-
-                <el-form :model="form" :rules="rules" ref="form" class="auth_login_form" label-position="top">
-                    <el-form-item label="账号" prop="account">
-                        <el-input
-                            type="text"
-                            v-model="form.account"
-                            placeholder="请输入账号"
-                            prefix-icon="el-icon-user"
-                            clearable
-                        />
-                    </el-form-item>
-
-                    <el-form-item label="密码" prop="password">
-                        <el-input
-                            :type="passwordType"
-                            v-model="form.password"
-                            placeholder="请输入密码"
-                            autocomplete="off"
-                            prefix-icon="el-icon-lock"
-                        >
-                            <i slot="suffix" class="password_toggle" @click="showPwd">
-                                <svg v-if="passwordType === 'password'" t="1620373409646" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3656" width="16" height="16"><path d="M512 366.545455c80.290909 0 145.454545 65.163636 145.454545 145.454545s-65.163636 145.454545-145.454545 145.454545-145.454545-65.163636-145.454545-145.454545 65.163636-145.454545 145.454545-145.454545m0-72.727273c-120.436364 0-218.181818 97.745455-218.181818 218.181818s97.745455 218.181818 218.181818 218.181818 218.181818-97.745455 218.181818-218.181818-97.745455-218.181818-218.181818-218.181818z" p-id="3657" fill="#8a8a8a"></path><path d="M512 145.454545c186.181818 0 346.181818 101.818182 436.363636 256-90.181818 154.181818-250.181818 256-436.363636 256S165.818182 555.636364 75.636364 401.454545c90.181818-154.181818 250.181818-256 436.363636-256m0-72.727272C288 72.727273 98.909091 212.363636 0 401.454545c98.909091 189.090909 288 328.727273 512 328.727273s413.090909-139.636364 512-328.727273c-98.909091-189.090909-288-328.727273-512-328.727273z" p-id="3658" fill="#8a8a8a"></path><path d="M167.272727 129.454545l698.181818 698.181819-50.90909 50.90909L116.363636 180.363636z" p-id="3659" fill="#8a8a8a"></path></svg>
-                                <svg v-else t="1620373409647" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="3660" width="16" height="16"><path d="M512 366.545455c80.290909 0 145.454545 65.163636 145.454545 145.454545s-65.163636 145.454545-145.454545 145.454545-145.454545-65.163636-145.454545-145.454545 65.163636-145.454545 145.454545-145.454545m0-72.727273c-120.436364 0-218.181818 97.745455-218.181818 218.181818s97.745455 218.181818 218.181818 218.181818 218.181818-97.745455 218.181818-218.181818-97.745455-218.181818-218.181818-218.181818z" p-id="3661" fill="#8a8a8a"></path><path d="M512 145.454545c186.181818 0 346.181818 101.818182 436.363636 256-90.181818 154.181818-250.181818 256-436.363636 256S165.818182 555.636364 75.636364 401.454545c90.181818-154.181818 250.181818-256 436.363636-256m0-72.727272C288 72.727273 98.909091 212.363636 0 401.454545c98.909091 189.090909 288 328.727273 512 328.727273s413.090909-139.636364 512-328.727273c-98.909091-189.090909-288-328.727273-512-328.727273z" p-id="3662" fill="#8a8a8a"></path></svg>
-                            </i>
-                        </el-input>
-                    </el-form-item>
-
-                    <div class="auth_verify_group">
-                        <label class="auth_verify_label">验证码 <span class="auth_required">*</span></label>
-                        <div class="auth_verify_box">
-                            <Verification ref="child"></Verification>
-                        </div>
-                    </div>
-                </el-form>
-
-                <div class="auth_login_actions">
-                    <el-button class="auth_submit_btn" type="primary" @click="sign_in()" :loading="loading">
-                        登录管理端
-                    </el-button>
-                    <div class="auth_secondary_actions">
-                        <el-button type="text" class="auth_text_btn" @click="$router.push('./register')">注册账号</el-button>
-                        <el-button type="text" class="auth_text_btn" @click="$router.push('./forgot')">忘记密码</el-button>
-                    </div>
-                </div>
-
-                <div class="auth_login_links">
-                    <span>普通用户？</span>
-                    <a class="auth_inline_link" href="javascript:void(0)" @click="goHome">前往用户端</a>
-                </div>
-            </section>
-        </div>
-    </article>
+	<div class="login_page">
+		<div class="login_bg_shapes">
+			<div class="shape shape_1"></div>
+			<div class="shape shape_2"></div>
+			<div class="shape shape_3"></div>
+		</div>
+		<div class="login_card" :class="{ show: visible }">
+			<div class="login_brand">
+				<div class="brand_icon">
+					<i class="el-icon-s-platform"></i>
+				</div>
+				<h1 class="brand_title">会展管理系统</h1>
+				<p class="brand_sub">管理后台 · Administrator</p>
+			</div>
+			<el-form ref="form" :model="form" class="login_form" @submit.native.prevent="submit()">
+				<div class="form_group">
+					<label class="form_label">账号</label>
+					<el-input
+						v-model="form.username"
+						placeholder="请输入管理员账号"
+						prefix-icon="el-icon-user"
+						size="large"
+						clearable
+					/>
+				</div>
+				<div class="form_group">
+					<label class="form_label">密码</label>
+					<el-input
+						v-model="form.password"
+						placeholder="请输入密码"
+						show-password
+						prefix-icon="el-icon-lock"
+						size="large"
+					/>
+				</div>
+				<Verification @returnData="returnData" />
+				<el-button
+					type="primary"
+					class="login_btn"
+					size="large"
+					:loading="loading"
+					native-type="submit"
+				>
+					{{ loading ? '登录中...' : '登 录' }}
+				</el-button>
+			</el-form>
+		</div>
+	</div>
 </template>
 
 <script>
-    import Verification from '@/components/common/verification.vue'
-    import {rsaEncrypt} from "@/store/encrypt";
+import Verification from '@/components/common/verification.vue';
+import mixin from "@/mixins/page.js";
+import { rsaEncrypt } from '@/store/encrypt.js';
 
-    export default {
-        components: {
-            Verification,
-        },
-        data: function() {
-            return {
-                passwordType: 'password',
-                oauth: {
-                    signIn: false
-                },
-                allow_user: [
-                    '管理员',
-                    '主办用户'
-                ],
-                web: this.$store.state.web,
-                loading: false,
-                form: {
-                    account: "",
-                    password: "",
-                },
-                remember_me: 1,
-                rules: {
-                    account: [
-                        { required: true, message: '请输入账号', trigger: 'blur' },
-                        { min: 5, max: 16, message: '长度在 5 到 16 个字符', trigger: 'blur' }
-                    ],
-                    password: [
-                        { required: true, message: '请输入密码', trigger: 'blur' },
-                        { min: 6, max: 16, message: '长度在 6 到 16 个字符', trigger: 'blur' }
-                    ]
-                },
-            }
-        },
-        methods: {
-            showPwd() {
-                this.passwordType = this.passwordType === 'password' ? 'text' : 'password';
-            },
-            goHome() {
-                let base = window.location.origin + window.location.pathname;
-                let homeUrl = base.replace('/admin/dist/', '/home/dist/').replace('/admin/dist', '/home/dist');
-                window.location.href = homeUrl;
-            },
-            sign_in() {
-                var _this = this;
-                this.$refs.form.validate((valid) => {
-                    if (!valid) return;
+export default {
+	mixins: [mixin],
+	components: { Verification },
+	data() {
+		return {
+			visible: false,
+			loading: false,
+			form: {
+				username: '',
+				password: '',
+				captcha: '',
+				captcha_code: ''
+			},
+			allow_user: ['管理员', '主办用户']
+		};
+	},
+	mounted() {
+		setTimeout(() => { this.visible = true; }, 100);
+	},
+	methods: {
+		returnData(e) {
+			this.form.captcha = e.captcha;
+			this.form.captcha_code = e.captcha_code;
+		},
+		submit() {
+			if (!this.form.username) {
+				return this.$message.warning('请输入账号');
+			}
+			if (!this.form.password) {
+				return this.$message.warning('请输入密码');
+			}
+			this.loading = true;
+			let params = JSON.parse(JSON.stringify(this.form));
+			params.password = rsaEncrypt(params.password);
 
-                    const bool = this.$refs.child ? this.$refs.child.sublim() : true;
-                    if (!bool) return;
-
-                    _this.loading = true;
-
-                    var f = _this.form;
-                    var form = {
-                        password: rsaEncrypt(f.password),
-                        username: f.account + ''
-                    };
-
-                    _this.$post('~/api/user/login?', form, (res) => {
-                        _this.loading = false;
-                        if (res.result && res.result.obj) {
-                            var obj = res.result.obj;
-                            const login_time = new Date().toLocaleString('zh-CN').replace(/\//g, '-').replace(/\s/, ' ').split('.')[0];
-                            _this.$post("~/api/user/set?user_id=" + obj.user_id, {
-                                login_time: login_time,
-                            });
-                            obj.login_time = login_time;
-
-                            if (_this.allow_user.includes(obj.user_group)) {
-                                _this.$store.commit('user_set', obj);
-
-                                if (_this.remember_me) {
-                                    $.db.set('account', f.account);
-                                }
-
-                                sessionStorage.setItem("user_id", obj.user_id);
-                                sessionStorage.setItem("nickname", obj.nickname || "");
-                                sessionStorage.setItem("avatar", obj.avatar || "");
-                                sessionStorage.setItem("user_group", obj.user_group || "");
-
-                                _this.$get_auth(obj.user_group, () => {
-                                    var url = _this.$redirect();
-                                    _this.$router.push(url || '/');
-                                });
-
-                                $.db.set('user_group', JSON.stringify(res.result.obj));
-                                _this.$message.success('登录成功');
-                            } else {
-                                _this.$message.error('普通用户请使用用户端登录');
-                            }
-                        } else if (res.error) {
-                            _this.$message.error(res.error.message);
-                        }
-                    });
-                });
-            },
-        },
-    }
+			this.$post('~/api/user/login?', params, (res) => {
+				this.loading = false;
+				if (res.result && res.result.obj) {
+					let obj = res.result.obj;
+					if (this.allow_user.includes(obj.user_group)) {
+						$.db.set('token', obj.token);
+						sessionStorage.setItem('user_group', obj.user_group);
+						this.$router.push('/');
+						this.$message.success('登录成功');
+					} else {
+						this.$message.error('非管理员或主办用户，无权登录');
+					}
+				} else if (res.error) {
+					this.$message.error(res.error.message);
+				}
+			});
+		}
+	}
+};
 </script>
 
 <style scoped>
-.auth_login_page {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem 1.2rem;
-    background:
-        radial-gradient(circle at 0% 0%, rgba(15, 95, 108, 0.1), transparent 28%),
-        radial-gradient(circle at 100% 0%, rgba(201, 135, 47, 0.08), transparent 22%),
-        linear-gradient(180deg, #f9fbfd 0%, #f3f7fb 100%);
+.login_page {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: linear-gradient(135deg, #051e23 0%, #093943 30%, #0f5f6c 70%, #0a4852 100%);
+	overflow: hidden;
 }
 
-.auth_login_shell {
-    display: grid;
-    grid-template-columns: minmax(360px, 1.05fr) minmax(380px, 520px);
-    width: min(100%, 1340px);
-    overflow: hidden;
-    border-radius: 34px;
-    background: rgba(255, 255, 255, 0.94);
-    border: 1px solid rgba(15, 54, 80, 0.08);
-    box-shadow: 0 34px 70px rgba(12, 38, 56, 0.14);
+.login_bg_shapes {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
 }
 
-.auth_login_visual {
-    position: relative;
-    overflow: hidden;
-    padding: 2.6rem 2.6rem 2.4rem;
-    background:
-        linear-gradient(145deg, rgba(9, 57, 67, 0.95), rgba(15, 95, 108, 0.76)),
-        url("/img/bg.jpg") center/cover no-repeat;
-    color: #fff;
+.shape {
+	position: absolute;
+	border-radius: 50%;
+	opacity: 0.06;
+	background: #4de8e0;
 }
 
-.auth_login_visual h1 {
-    margin: 1rem 0 0.9rem;
-    font-size: 3rem;
-    line-height: 1.14;
+.shape_1 {
+	width: 500px;
+	height: 500px;
+	top: -150px;
+	right: -100px;
+	animation: float 20s ease-in-out infinite;
 }
 
-.auth_login_visual p {
-    max-width: 34rem;
-    line-height: 1.9;
-    color: rgba(255, 255, 255, 0.84);
+.shape_2 {
+	width: 350px;
+	height: 350px;
+	bottom: -100px;
+	left: -80px;
+	animation: float 25s ease-in-out infinite reverse;
 }
 
-.auth_kicker {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.55rem;
-    padding: 0.45rem 0.95rem;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.14);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    color: #fff;
-    font-size: 0.82rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+.shape_3 {
+	width: 200px;
+	height: 200px;
+	top: 50%;
+	left: 60%;
+	background: #c9872f;
+	opacity: 0.04;
+	animation: float 18s ease-in-out infinite;
 }
 
-.auth_kicker::before {
-    content: "";
-    width: 0.45rem;
-    height: 0.45rem;
-    border-radius: 999px;
-    background: #c9872f;
+@keyframes float {
+	0%, 100% { transform: translateY(0) rotate(0deg); }
+	50% { transform: translateY(-30px) rotate(5deg); }
 }
 
-.auth_visual_cards {
-    display: grid;
-    gap: 1rem;
-    margin-top: 2.1rem;
+.login_card {
+	position: relative;
+	width: 420px;
+	background: rgba(255, 255, 255, 0.97);
+	border-radius: 16px;
+	padding: 48px 40px 40px;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+	transform: translateY(30px);
+	opacity: 0;
+	transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.auth_visual_card {
-    padding: 1.15rem 1.2rem;
-    border-radius: 24px;
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    backdrop-filter: blur(10px);
+.login_card.show {
+	transform: translateY(0);
+	opacity: 1;
 }
 
-.auth_visual_card strong {
-    display: block;
-    font-size: 1rem;
+.login_brand {
+	text-align: center;
+	margin-bottom: 36px;
 }
 
-.auth_visual_card span {
-    display: block;
-    margin-top: 0.45rem;
-    color: rgba(255, 255, 255, 0.8);
-    line-height: 1.78;
+.brand_icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 64px;
+	height: 64px;
+	border-radius: 16px;
+	background: linear-gradient(135deg, #093943, #0f5f6c);
+	color: #4de8e0;
+	font-size: 28px;
+	margin-bottom: 20px;
+	box-shadow: 0 8px 24px rgba(9, 57, 67, 0.3);
 }
 
-.auth_login_panel {
-    padding: 2.5rem 2.45rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+.brand_title {
+	font-size: 24px;
+	font-weight: 700;
+	color: #093943;
+	margin: 0 0 6px;
+	letter-spacing: 2px;
 }
 
-.auth_login_header h2 {
-    margin: 0.9rem 0 0.45rem;
-    color: #132433;
-    font-size: 2rem;
+.brand_sub {
+	font-size: 13px;
+	color: #8c9ba5;
+	margin: 0;
+	letter-spacing: 4px;
+	text-transform: uppercase;
 }
 
-.auth_login_header p {
-    margin: 0;
-    color: #617385;
-    line-height: 1.8;
+.login_form {
+	width: 100%;
 }
 
-.auth_login_form {
-    margin-top: 1.45rem;
+.form_group {
+	margin-bottom: 22px;
 }
 
-.auth_login_form >>> .el-form-item__label {
-    color: #617385;
-    font-size: 0.88rem;
-    font-weight: 700;
-    padding-bottom: 4px;
+.form_label {
+	display: block;
+	font-size: 13px;
+	font-weight: 600;
+	color: #3a4a52;
+	margin-bottom: 8px;
 }
 
-.auth_login_form >>> .el-input__inner {
-    min-height: 48px;
-    border-radius: 16px;
-    border: 1px solid rgba(15, 54, 80, 0.12);
-    box-shadow: none;
-    font-size: 14px;
+.login_form .el-input__inner {
+	height: 46px;
+	border-radius: 10px;
+	border: 2px solid #e8edf0;
+	font-size: 14px;
+	padding-left: 40px;
+	transition: all 0.3s ease;
 }
 
-.auth_login_form >>> .el-input__inner:focus {
-    border-color: rgba(15, 95, 108, 0.4);
-    box-shadow: 0 0 0 3px rgba(15, 95, 108, 0.12);
+.login_form .el-input__inner:focus {
+	border-color: #0f5f6c;
+	box-shadow: 0 0 0 3px rgba(15, 95, 108, 0.1);
 }
 
-.auth_login_form >>> .el-input__prefix {
-    display: flex;
-    align-items: center;
-    color: #617385;
+.login_form .el-input__prefix {
+	left: 12px;
+	color: #8c9ba5;
 }
 
-.auth_verify_group {
-    margin-top: 0.2rem;
-    margin-bottom: 0.5rem;
+.login_btn {
+	width: 100%;
+	height: 48px;
+	border-radius: 10px;
+	font-size: 16px;
+	font-weight: 600;
+	letter-spacing: 4px;
+	margin-top: 8px;
+	background: linear-gradient(135deg, #093943 0%, #0f5f6c 100%);
+	border: none;
+	transition: all 0.3s ease;
 }
 
-.auth_verify_label {
-    display: block;
-    margin-bottom: 0.45rem;
-    color: #617385;
-    font-size: 0.88rem;
-    font-weight: 700;
+.login_btn:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 8px 25px rgba(15, 95, 108, 0.35);
 }
 
-.auth_required {
-    color: #f56c6c;
-    margin-left: 2px;
+.login_btn:active {
+	transform: translateY(0);
 }
 
-.auth_verify_box {
-    display: flex;
-    align-items: center;
-    min-height: 64px;
-    padding: 0.7rem 0.85rem;
-    border-radius: 18px;
-    background: #f7fafc;
-    border: 1px solid rgba(15, 54, 80, 0.08);
-}
-
-.auth_verify_box >>> .el-input__inner {
-    border: none;
-    background: transparent;
-    box-shadow: none;
-}
-
-.auth_login_actions {
-    margin-top: 1.4rem;
-}
-
-.auth_submit_btn {
-    width: 100%;
-    min-height: 48px;
-    border-radius: 16px;
-    font-size: 15px;
-    font-weight: 600;
-    background: linear-gradient(135deg, #0f5f6c, #1d7a86);
-    border: none;
-    letter-spacing: 0.04em;
-}
-
-.auth_submit_btn:hover {
-    background: linear-gradient(135deg, #0d4f5a, #176a75);
-}
-
-.auth_secondary_actions {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    margin-top: 0.8rem;
-}
-
-.auth_text_btn {
-    color: #617385;
-    font-size: 13px;
-}
-
-.auth_text_btn:hover {
-    color: #0f5f6c;
-}
-
-.auth_login_links {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    margin-top: 1.1rem;
-    color: #617385;
-    font-size: 14px;
-}
-
-.auth_inline_link {
-    border: none;
-    background: transparent;
-    color: #0f5f6c;
-    font-weight: 700;
-    cursor: pointer;
-    text-decoration: none;
-}
-
-.auth_inline_link:hover {
-    text-decoration: underline;
-}
-
-.password_toggle {
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    padding-right: 4px;
-}
-
-.password_toggle svg {
-    width: 16px;
-    height: 16px;
-}
-
-@media (max-width: 980px) {
-    .auth_login_shell {
-        grid-template-columns: 1fr;
-    }
-
-    .auth_login_visual,
-    .auth_login_panel {
-        padding: 1.6rem;
-    }
-
-    .auth_login_visual h1 {
-        font-size: 2.3rem;
-    }
-}
-
-@media (max-width: 640px) {
-    .auth_login_page {
-        padding: 1rem 0.8rem;
-    }
-
-    .auth_login_shell {
-        border-radius: 22px;
-    }
+@media (max-width: 480px) {
+	.login_card {
+		width: calc(100% - 32px);
+		padding: 36px 24px 32px;
+		margin: 0 16px;
+	}
 }
 </style>
