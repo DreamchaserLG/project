@@ -231,9 +231,9 @@
         
         
         
-                        <el-table-column fixed="right" label="操作" min-width="180" v-if="$check_action('/registration_information/table','set') || $check_action('/registration_information/view','set') || $check_action('/registration_information/view','get')
-												|| $check_action('/travel_confirmation/table','add') || $check_action('/travel_confirmation/view','add')
-						|| $check_action('/refund_request/table','add') || $check_action('/refund_request/view','add')
+                        <el-table-column fixed="right" label="操作" min-width="240" v-if="$check_action('/registration_information/table','set') || $check_action('/registration_information/view','set') || $check_action('/registration_information/view','get')
+												|| $check_action('/travel_confirmation/table','add') || $check_action('/travel_confirmation/view','add') || $check_action('/travel_confirmation/view','get')
+						|| $check_action('/refund_request/table','add') || $check_action('/refund_request/view','add') || $check_action('/refund_request/view','get')
 											 ">
         
 
@@ -244,12 +244,12 @@
                                  size="small">
           <span>详情</span>
         </router-link>
-                                        <!--跨表按钮-->
-                  										<el-button class="el-button el-button--small is-plain el-button--default" style="margin: 5px !important;" size="small"  @click="to_table(scope.row,'/travel_confirmation/view')" v-if="($check_action('/travel_confirmation/table','add') || $check_action('/travel_confirmation/view','add')) && canTravel(scope.row)">
-					  <span>行程确认</span>
+        <!--跨表按钮-->
+        <el-button class="el-button el-button--small is-plain el-button--default" style="margin: 5px !important;" size="small"  @click="openTravelConfirmation(scope.row)" v-if="($check_action('/travel_confirmation/table','add') || $check_action('/travel_confirmation/view','add') || $check_action('/travel_confirmation/view','get')) && canOpenTravel(scope.row)">
+					  <span>{{ scope.row.travel_confirmation_id ? '行程信息' : '行程确认' }}</span>
 					</el-button>
-					                  										<el-button class="el-button el-button--small is-plain el-button--default" style="margin: 5px !important;" size="small"  @click="to_table(scope.row,'/refund_request/view')" v-if="($check_action('/refund_request/table','add') || $check_action('/refund_request/view','add')) && canRefund(scope.row)">
-					  <span>申请退款</span>
+        <el-button class="el-button el-button--small is-plain el-button--default" style="margin: 5px !important;" size="small"  @click="openRefundRequest(scope.row)" v-if="($check_action('/refund_request/table','add') || $check_action('/refund_request/view','add') || $check_action('/refund_request/view','get')) && canOpenRefund(scope.row)">
+					  <span>退款处理</span>
 					</el-button>
 					                                                                              <el-button class="el-button el-button--small is-plain el-button--default" style="margin: 5px !important;" size="small" @click="openPayModal(scope.row)" v-if="($check_pay('/registration_information/table')) && canPay(scope.row)">
               <span>支付</span>
@@ -498,12 +498,77 @@
           && !row.travel_confirmation_limit
           && !row.travel_confirmation_status_limit;
       },
+      canOpenTravel(row) {
+        return row
+          && this.normalizeRegistrationStatus(row) === "已报名"
+          && row.examine_state === "已通过"
+          && (!!row.travel_confirmation_id || this.canTravel(row));
+      },
       canRefund(row) {
         return this.normalizeRegistrationStatus(row) === "已报名"
           && row.examine_state === "已通过"
           && row.pay_state === "已支付"
           && !row.refund_request_limit
           && !row.refund_request_status_limit;
+      },
+      canOpenRefund(row) {
+        if (!row) {
+          return false;
+        }
+        if (row.refund_request_id) {
+          return true;
+        }
+        return this.canRefund(row);
+      },
+      openTravelConfirmation(row) {
+        if (row.travel_confirmation_id) {
+          this.$router.push("/travel_confirmation/view?travel_confirmation_id=" + row.travel_confirmation_id);
+          return;
+        }
+        this.startRelatedForm(row, "/travel_confirmation/view");
+      },
+      openRefundRequest(row) {
+        if (row.refund_request_id) {
+          this.$router.push("/refund_request/view?refund_request_id=" + row.refund_request_id);
+          return;
+        }
+        this.startRelatedForm(row, "/refund_request/view");
+      },
+      startRelatedForm(row, url) {
+        var form = Object.assign({}, row);
+        delete form["examine_state"];
+        delete form["examine_reply"];
+        delete form["travel_confirmation_id"];
+        delete form["refund_request_id"];
+        $.db.set("form", form);
+        this.$router.push(url);
+      },
+      loadRelatedRecord(item, api, idField, limitTimesField, limitFlagField) {
+        var _this = this;
+        var param = {
+          source_table: "registration_information",
+          source_id: item.registration_information_id
+        };
+        Object.assign(item, {
+          source_table: param.source_table,
+          source_id: param.source_id,
+          source_user_id: _this.user.user_id
+        });
+        _this.$get("~/api/" + api + "/get_list?", Object.assign({
+          size: 1,
+          page: 1,
+          orderby: "create_time desc"
+        }, param), function(result) {
+          var list = result && result.result && result.result.list ? result.result.list : [];
+          var count = result && result.result && result.result.count !== undefined ? result.result.count : list.length;
+          var limitTimes = Number(item[limitTimesField] || 0);
+          if (list.length > 0) {
+            _this.$set(item, idField, list[0][idField]);
+          } else {
+            _this.$set(item, idField, "");
+          }
+          _this.$set(item, limitFlagField, limitTimes > 0 && count >= limitTimes);
+        });
       },
       canCancel(row) {
         if (this.normalizeRegistrationStatus(row) === "候补中") {
@@ -656,46 +721,22 @@
 				})
 			      
 				        		  			  	_this.list.map((item) => {
-		  		let param = {
-		  			source_table: "registration_information",
-		  			source_id: item.registration_information_id,
-		  			source_user_id: _this.user.user_id
-		  		};
-		  		if(item.travel_confirmation_limit_times > 0){
-		  			_this.$get("~/api/travel_confirmation/count?",param,(result)=>{
-		  				if(result){
-		  					if(result.result >= item.travel_confirmation_limit_times){
-		  						_this.$set(item,'travel_confirmation_limit',true);
-		  					}else{
-		  						_this.$set(item,'travel_confirmation_limit',false);
-		  					}
-		  				}
-		  			})
-		  		}else{
-		  			_this.$set(item,'travel_confirmation_limit',false);
-		  		}
-		  		Object.assign(item, param)
+          _this.loadRelatedRecord(
+            item,
+            "travel_confirmation",
+            "travel_confirmation_id",
+            "travel_confirmation_limit_times",
+            "travel_confirmation_limit"
+          );
 		  	})
 		  			  	_this.list.map((item) => {
-		  		let param = {
-		  			source_table: "registration_information",
-		  			source_id: item.registration_information_id,
-		  			source_user_id: _this.user.user_id
-		  		};
-		  		if(item.refund_request_limit_times > 0){
-		  			_this.$get("~/api/refund_request/count?",param,(result)=>{
-		  				if(result){
-		  					if(result.result >= item.refund_request_limit_times){
-		  						_this.$set(item,'refund_request_limit',true);
-		  					}else{
-		  						_this.$set(item,'refund_request_limit',false);
-		  					}
-		  				}
-		  			})
-		  		}else{
-		  			_this.$set(item,'refund_request_limit',false);
-		  		}
-		  		Object.assign(item, param)
+          _this.loadRelatedRecord(
+            item,
+            "refund_request",
+            "refund_request_id",
+            "refund_request_limit_times",
+            "refund_request_limit"
+          );
 		  	})
 		  							    			    			    			    			    			    			    			    			    			    			    			    			    			    			    			    			  },
 

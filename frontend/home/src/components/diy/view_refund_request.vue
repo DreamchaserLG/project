@@ -98,6 +98,21 @@
 					<el-input id="examine_reply" v-model="form['examine_reply']" placeholder="请输入审核回复"
 						v-if="(form['examine_reply'] && $check_examine()) || (!form['examine_reply'] && $check_examine())" :disabled="true"></el-input>
 					<div v-else>{{form["examine_reply"]}}</div>
+					<div style="margin-top: 8px;">
+						<el-button
+							v-if="canAppealRefund()"
+							type="warning"
+							size="small"
+							@click="appealRefund">
+							向管理员申诉
+						</el-button>
+						<span v-else-if="form['escalate_state'] === '已申诉'" style="color: #E6A23C; font-size: 12px;">
+							已申诉，等待管理员复核
+						</span>
+						<span v-else-if="form['escalate_state'] === '已处理'" style="color: #67C23A; font-size: 12px;">
+							管理员已处理
+						</span>
+					</div>
 				</el-form-item>
 			</el-col>
 	
@@ -158,6 +173,8 @@
 										"reason_for_application":  '', // 申请理由
 										"examine_state": "未审核",
 							"examine_reply": "",
+							"escalate_state": "",
+							"escalate_reason": "",
 							"refund_request_id": 0, // ID
 													"create_by": this.$store.state.user.user_id,
 						},
@@ -187,10 +204,41 @@
 				return form;
 			},
 												},
-		methods: {
+	methods: {
 																	  openPreview(file) {
 	    window.open(file.url)
 	  },
+		canAppealRefund() {
+			return this.form
+				&& this.form.refund_request_id
+				&& this.form.examine_state === "未通过"
+				&& this.form.escalate_state !== "已申诉"
+				&& this.form.escalate_state !== "已处理";
+		},
+		appealRefund() {
+			let _this = this;
+			let defaultReason = this.form.examine_reply
+				? "主办方拒绝退款，申请管理员复核。未退款原因：" + this.form.examine_reply
+				: "主办方拒绝退款，申请管理员复核";
+			this.$prompt("请填写申诉原因", "向管理员申诉", {
+				confirmButtonText: "提交申诉",
+				cancelButtonText: "取消",
+				inputPlaceholder: "说明为什么需要管理员复核退款",
+				inputValue: defaultReason,
+				type: "warning"
+			}).then(function(ref) {
+				_this.$post("~/api/refund_request/escalate/" + _this.form.refund_request_id, {
+					reason: ref.value || defaultReason
+				}, function(json) {
+					if (json && json.result) {
+						_this.$toast(json.result.message || "申诉已提交", "success");
+						_this.get_obj();
+					} else if (json && json.error) {
+						_this.$toast(json.error.message, "danger");
+					}
+				});
+			}).catch(function() {});
+		},
 		
 	
 					
