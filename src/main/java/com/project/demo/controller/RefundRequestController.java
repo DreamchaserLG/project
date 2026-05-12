@@ -116,6 +116,11 @@ public class RefundRequestController extends BaseController<RefundRequest, Refun
         }
 
         refundRequest.setExamine_state(newState);
+        if ("已申诉".equals(refundRequest.getEscalate_state())
+                && (RegistrationWaitlistService.EXAMINE_APPROVED.equals(newState)
+                || RegistrationWaitlistService.EXAMINE_REJECTED.equals(newState))) {
+            refundRequest.setEscalate_state("已处理");
+        }
         this.setEntity(queryMap, new HashMap<String, String>(), refundRequest);
 
         if (refundRequest.getSource_id() != null) {

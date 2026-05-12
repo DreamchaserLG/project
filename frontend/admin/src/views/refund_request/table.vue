@@ -488,7 +488,7 @@
 				});
 				
 																																																																													
-				this.query.orderby = "create_time desc";
+				this.query.orderby = "CASE WHEN escalate_state = '已申诉' THEN 0 WHEN examine_state = '未审核' THEN 1 ELSE 2 END,create_time desc";
 				this.get_list();
 							},
 	},

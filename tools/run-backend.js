@@ -2,6 +2,7 @@ const path = require("path");
 const {
   explodeJar,
   getExplodedClasspath,
+  jarPath,
   prepareTargetResources,
   rootDir,
   runCommand,
@@ -19,12 +20,18 @@ async function main() {
     return;
   }
 
-  explodeJar();
-  const runCode = await runCommand("java", [
-    "-cp",
-    getExplodedClasspath(),
-    "com.project.demo.Application",
-  ]);
+  let runCode;
+  try {
+    explodeJar();
+    runCode = await runCommand("java", [
+      "-cp",
+      getExplodedClasspath(),
+      "com.project.demo.Application",
+    ]);
+  } catch (error) {
+    console.warn(`Failed to explode backend jar, fallback to java -jar: ${error.message}`);
+    runCode = await runCommand("java", ["-jar", jarPath]);
+  }
   process.exit(runCode);
 }
 

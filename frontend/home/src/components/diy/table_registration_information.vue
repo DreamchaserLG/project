@@ -540,6 +540,9 @@
         delete form["examine_reply"];
         delete form["travel_confirmation_id"];
         delete form["refund_request_id"];
+        form.source_table = "registration_information";
+        form.source_id = row.registration_information_id;
+        form.source_user_id = this.user.user_id;
         $.db.set("form", form);
         this.$router.push(url);
       },
