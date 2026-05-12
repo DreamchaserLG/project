@@ -23,6 +23,10 @@ ALTER TABLE `registration_information`
   ADD COLUMN IF NOT EXISTS `escalate_state` varchar(16) DEFAULT '' COMMENT '越级状态',
   ADD COLUMN IF NOT EXISTS `escalate_reason` varchar(500) DEFAULT '' COMMENT '越级原因';
 
+ALTER TABLE `refund_request`
+  ADD COLUMN IF NOT EXISTS `escalate_state` varchar(16) DEFAULT '' COMMENT '申诉状态',
+  ADD COLUMN IF NOT EXISTS `escalate_reason` varchar(500) DEFAULT '' COMMENT '申诉原因';
+
 SET @drop_registration_booth_number_index = (
   SELECT IF(
     EXISTS (

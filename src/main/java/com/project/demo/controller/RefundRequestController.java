@@ -9,6 +9,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -66,6 +67,7 @@ public class RefundRequestController extends BaseController<RefundRequest, Refun
         clearEmptyString(paramMap);
 
         RefundRequest refundRequest = buildRefundRequest(paramMap, false);
+        markAppealResolvedIfNeeded(queryMap, paramMap, refundRequest);
         this.setEntity(queryMap, configMap, refundRequest);
 
         Integer registrationId = getRefundSourceId(queryMap, paramMap, refundRequest);
@@ -74,6 +76,23 @@ public class RefundRequestController extends BaseController<RefundRequest, Refun
         }
 
         return success(1);
+    }
+
+    @PostMapping("/escalate/{refundRequestId}")
+    @Transactional
+    public Map<String, Object> escalateToAdmin(@PathVariable Integer refundRequestId,
+                                               HttpServletRequest request) throws IOException {
+        Map<String, Object> paramMap = service.readBody(request.getReader());
+        if (paramMap == null) {
+            paramMap = new HashMap<String, Object>();
+        }
+
+        Map<String, Object> result = service.escalateToAdmin(refundRequestId, stringValue(paramMap.get("reason")));
+        if (!Boolean.TRUE.equals(result.get("ok"))) {
+            return error(30000, String.valueOf(result.get("message")));
+        }
+
+        return success(result);
     }
 
     @Transactional
@@ -131,12 +150,36 @@ public class RefundRequestController extends BaseController<RefundRequest, Refun
         refundRequest.setReason_for_application(stringValue(paramMap.get("reason_for_application")));
         refundRequest.setExamine_state(stringValue(paramMap.get("examine_state")));
         refundRequest.setExamine_reply(stringValue(paramMap.get("examine_reply")));
+        refundRequest.setEscalate_state(stringValue(paramMap.get("escalate_state")));
+        refundRequest.setEscalate_reason(stringValue(paramMap.get("escalate_reason")));
         refundRequest.setExtra(stringValue(paramMap.get("extra")));
         refundRequest.setSource_table(stringValue(paramMap.get("source_table")));
         refundRequest.setSource_id(intValue(paramMap.get("source_id")));
         refundRequest.setSource_user_id(intValue(paramMap.get("source_user_id")));
         refundRequest.setCreate_by(intValue(paramMap.get("create_by")));
         return refundRequest;
+    }
+
+    private void markAppealResolvedIfNeeded(Map<String, String> queryMap,
+                                            Map<String, Object> paramMap,
+                                            RefundRequest refundRequest) {
+        String examineState = stringValue(paramMap.get("examine_state"));
+        if (!RegistrationWaitlistService.EXAMINE_APPROVED.equals(examineState)
+                && !RegistrationWaitlistService.EXAMINE_REJECTED.equals(examineState)) {
+            return;
+        }
+
+        Integer refundRequestId = queryMap == null ? null : intValue(queryMap.get("refund_request_id"));
+        if (refundRequestId == null) {
+            return;
+        }
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT escalate_state FROM refund_request WHERE refund_request_id = ? LIMIT 1",
+                refundRequestId);
+        if (!rows.isEmpty() && "已申诉".equals(stringValue(rows.get(0).get("escalate_state")))) {
+            refundRequest.setEscalate_state("已处理");
+        }
     }
 
     private void handleRefundStateChange(Integer registrationId, String examineState, String examineReply) {

@@ -100,7 +100,24 @@
             </template>
           </el-table-column>
         
-                  <el-table-column label="审核回复" prop="examine_reply">
+                  <el-table-column label="未退款原因/申诉" prop="examine_reply" min-width="240">
+            <template slot-scope="scope">
+              <div>{{ scope.row['examine_reply'] }}</div>
+              <el-button
+                v-if="canAppealRefund(scope.row)"
+                class="el-button el-button--mini is-plain el-button--warning"
+                style="margin-top: 6px !important;"
+                size="mini"
+                @click="appealRefund(scope.row)">
+                向管理员申诉
+              </el-button>
+              <span v-else-if="scope.row['escalate_state'] === '已申诉'" style="color: #E6A23C; font-size: 12px;">
+                已申诉，等待管理员复核
+              </span>
+              <span v-else-if="scope.row['escalate_state'] === '已处理'" style="color: #67C23A; font-size: 12px;">
+                管理员已处理
+              </span>
+            </template>
           </el-table-column>
         
                                       <el-table-column prop="extra" @sort-change="$sortChange" label="信息" min-width="300" v-if="hasExtraData" >
@@ -269,6 +286,37 @@
   	          	              // 关闭弹框
       closeModal(){
         this.showModal = false;
+      },
+      canAppealRefund(row) {
+        return row
+          && row.examine_state === "未通过"
+          && row.escalate_state !== "已申诉"
+          && row.escalate_state !== "已处理";
+      },
+      appealRefund(row) {
+        let _this = this;
+        let defaultReason = row.examine_reply
+          ? "主办方拒绝退款，申请管理员复核。未退款原因：" + row.examine_reply
+          : "主办方拒绝退款，申请管理员复核";
+        this.$prompt("请填写申诉原因", "向管理员申诉", {
+          confirmButtonText: "提交申诉",
+          cancelButtonText: "取消",
+          inputPlaceholder: "说明为什么需要管理员复核退款",
+          inputValue: defaultReason,
+          type: "warning"
+        }).then(function(ref) {
+          _this.$post("~/api/refund_request/escalate/" + row.refund_request_id, {
+            reason: ref.value || defaultReason
+          }, function(json) {
+            if (json && json.result) {
+              _this.$toast(json.result.message || "申诉已提交", "success");
+              _this.rejectDialogVisible = false;
+              _this.get_list();
+            } else if (json && json.error) {
+              _this.$toast(json.error.message, "danger");
+            }
+          });
+        }).catch(function() {});
       },
         			// 审核弹窗
 			changeSigning(query, index) {

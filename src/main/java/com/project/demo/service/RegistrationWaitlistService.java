@@ -551,10 +551,6 @@ public class RegistrationWaitlistService {
             return "审核通过后才能提交行程确认";
         }
 
-        if (!PAY_PAID.equals(safeString(registration.get("pay_state")))) {
-            return "支付完成后才能提交行程确认";
-        }
-
         Integer limit = toPositiveInt(registration.get("travel_confirmation_limit_times"), 1);
         Integer used = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM travel_confirmation WHERE source_table = ? AND source_id = ?",

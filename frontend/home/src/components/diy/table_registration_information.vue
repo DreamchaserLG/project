@@ -231,7 +231,7 @@
         
         
         
-                        <el-table-column fixed="right" label="操作" min-width="120" v-if="$check_action('/registration_information/table','set') || $check_action('/registration_information/view','set') || $check_action('/registration_information/view','get')
+                        <el-table-column fixed="right" label="操作" min-width="180" v-if="$check_action('/registration_information/table','set') || $check_action('/registration_information/view','set') || $check_action('/registration_information/view','get')
 												|| $check_action('/travel_confirmation/table','add') || $check_action('/travel_confirmation/view','add')
 						|| $check_action('/refund_request/table','add') || $check_action('/refund_request/view','add')
 											 ">
@@ -249,7 +249,7 @@
 					  <span>行程确认</span>
 					</el-button>
 					                  										<el-button class="el-button el-button--small is-plain el-button--default" style="margin: 5px !important;" size="small"  @click="to_table(scope.row,'/refund_request/view')" v-if="($check_action('/refund_request/table','add') || $check_action('/refund_request/view','add')) && canRefund(scope.row)">
-					  <span>退款申请</span>
+					  <span>申请退款</span>
 					</el-button>
 					                                                                              <el-button class="el-button el-button--small is-plain el-button--default" style="margin: 5px !important;" size="small" @click="openPayModal(scope.row)" v-if="($check_pay('/registration_information/table')) && canPay(scope.row)">
               <span>支付</span>
@@ -495,7 +495,6 @@
       canTravel(row) {
         return this.normalizeRegistrationStatus(row) === "已报名"
           && row.examine_state === "已通过"
-          && row.pay_state === "已支付"
           && !row.travel_confirmation_limit
           && !row.travel_confirmation_status_limit;
       },

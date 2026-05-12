@@ -63,7 +63,13 @@ public class RefundRequest implements Serializable {
     @TableField(value = "examine_reply")
     private String examine_reply;
 
+    // 申诉状态
+    @TableField(value = "escalate_state")
+    private String escalate_state;
 
+    // 申诉原因
+    @TableField(value = "escalate_reason")
+    private String escalate_reason;
 
 
 

@@ -100,6 +100,15 @@
 			</el-table-column>
 			<el-table-column label="审核回复" prop="examine_reply" min-width="200">
 			</el-table-column>
+			<el-table-column label="申诉状态" prop="escalate_state" min-width="120">
+				<template slot-scope="scope">
+					<span v-if="scope.row['escalate_state'] === '已申诉'" style="color: #E6A23C;">已申诉</span>
+					<span v-else-if="scope.row['escalate_state'] === '已处理'" style="color: #67C23A;">已处理</span>
+					<span v-else>{{ scope.row['escalate_state'] }}</span>
+				</template>
+			</el-table-column>
+			<el-table-column label="申诉原因" prop="escalate_reason" min-width="260">
+			</el-table-column>
 
 			<el-table-column prop="extra" @sort-change="$sortChange" label="信息" min-width="300" v-if="hasExtraData" >
 				<template slot-scope="scope">
@@ -222,7 +231,7 @@
 											"examine_state":"",
 					"login_time": "",
 					"create_time": "",
-					"orderby": `CASE WHEN examine_state = '未审核' THEN 1 ELSE 2 END,create_time desc`
+					"orderby": `CASE WHEN escalate_state = '已申诉' THEN 0 WHEN examine_state = '未审核' THEN 1 ELSE 2 END,create_time desc`
 				},
 
 				// 数据
