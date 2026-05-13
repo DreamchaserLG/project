@@ -392,10 +392,11 @@ public class BaseService<E>{
             if (sqlwhere!=null && !sqlwhere.trim().equals("")) {
                 StringBuilder sql = new StringBuilder(" WHERE ");
                 sql.append(sqlwhere);
+                sql.append(" ");
                 return sql.toString();
             }
         }
-        return "";
+        return " ";
     }
 
     public Map<String,Object> readBody(BufferedReader reader){

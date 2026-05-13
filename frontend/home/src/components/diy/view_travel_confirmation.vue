@@ -324,6 +324,9 @@
 			 * @param {Object} func
 			 */
 			async get_obj_after(json, func){
+				if (!json || !json.result || !json.result.obj) {
+					return;
+				}
 				if (json.result && json.result.obj) {
 					const obj = json.result.obj;
 				}
@@ -371,8 +374,9 @@
 								content: this.$store.state.user.username + '-' + this.$store.state.user.nickname + '提交了一条行程确认数据',
 								state: 1,
 								user_id:'9999'
-							}
+					}
 							this.$post("~/api/message_inform/add",message_inform)
+							this.$toast('提交成功！', 'success');
 									setTimeout(() => {
 								this.$router.push(skip_Path);
 							}, 1000);
