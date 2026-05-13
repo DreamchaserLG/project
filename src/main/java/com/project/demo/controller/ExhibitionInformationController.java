@@ -1,7 +1,9 @@
 package com.project.demo.controller;
 
 import com.project.demo.entity.ExhibitionInformation;
+import com.project.demo.constant.FindConfig;
 import com.project.demo.service.AuditLogService;
+import com.project.demo.service.BusinessAccessService;
 import com.project.demo.service.ExhibitionInformationService;
 import com.alibaba.fastjson.JSON;
 import com.project.demo.controller.base.BaseController;
@@ -34,15 +36,48 @@ import java.util.regex.Pattern;
 public class ExhibitionInformationController extends BaseController<ExhibitionInformation, ExhibitionInformationService> {
 
     private final AuditLogService auditLogService;
+    private final BusinessAccessService accessService;
 
     /**
      * 会展信息对象
      */
     @Autowired
     public ExhibitionInformationController(ExhibitionInformationService service,
-                                           AuditLogService auditLogService) {
+                                           AuditLogService auditLogService,
+                                           BusinessAccessService accessService) {
         setService(service);
         this.auditLogService = auditLogService;
+        this.accessService = accessService;
+    }
+
+    @RequestMapping("/get_list")
+    public Map<String, Object> getList(HttpServletRequest request) {
+        Map<String, String> config = service.readConfig(request);
+        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request, "exhibition_information"));
+        Map<String, Object> map = service.selectToPage(service.readQuery(request), config);
+        return success(map);
+    }
+
+    @RequestMapping("/get_obj")
+    public Map<String, Object> obj(HttpServletRequest request) {
+        Map<String, String> config = service.readConfig(request);
+        config.put("like", "0");
+        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request, "exhibition_information"));
+        List resultList = service.selectBaseList(service.select(service.readQuery(request), config));
+        if (resultList.size() > 0) {
+            com.alibaba.fastjson.JSONObject jsonObject = new com.alibaba.fastjson.JSONObject();
+            jsonObject.put("obj", resultList.get(0));
+            return success(jsonObject);
+        }
+        return success(null);
+    }
+
+    @RequestMapping(value = {"/count_group", "/count"})
+    public Map<String, Object> count(HttpServletRequest request) {
+        Map<String, String> config = service.readConfig(request);
+        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request, "exhibition_information"));
+        Integer value = service.selectSqlToInteger(service.groupCount(service.readQuery(request), config));
+        return success(value);
     }
 
 

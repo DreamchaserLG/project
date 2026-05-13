@@ -476,11 +476,8 @@ public class BaseService<E>{
     }
 
     public E findOne(Map<String, String> map){
-        try {
-            return (E)baseMapper.selectBaseOne(select(map, new HashMap<>()));
-        }catch (Exception e){
-            return null;
-        }
+        List list = selectBaseList(select(map, new HashMap<>()));
+        return list.isEmpty() ? null : (E) list.get(0);
     }
 
 

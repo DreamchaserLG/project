@@ -1,6 +1,8 @@
 package com.project.demo.controller;
 
 import com.project.demo.entity.BoothInformation;
+import com.project.demo.constant.FindConfig;
+import com.project.demo.service.BusinessAccessService;
 import com.project.demo.service.BoothInformationService;
 import com.alibaba.fastjson.JSON;
 import com.project.demo.controller.base.BaseController;
@@ -28,12 +30,46 @@ import java.util.*;
 @RequestMapping("/booth_information")
 public class BoothInformationController extends BaseController<BoothInformation, BoothInformationService> {
 
+    private final BusinessAccessService accessService;
+
     /**
      * 展位信息对象
      */
     @Autowired
-    public BoothInformationController(BoothInformationService service) {
+    public BoothInformationController(BoothInformationService service,
+                                      BusinessAccessService accessService) {
         setService(service);
+        this.accessService = accessService;
+    }
+
+    @RequestMapping("/get_list")
+    public Map<String, Object> getList(HttpServletRequest request) {
+        Map<String, String> config = service.readConfig(request);
+        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request, "booth_information"));
+        Map<String, Object> map = service.selectToPage(service.readQuery(request), config);
+        return success(map);
+    }
+
+    @RequestMapping("/get_obj")
+    public Map<String, Object> obj(HttpServletRequest request) {
+        Map<String, String> config = service.readConfig(request);
+        config.put("like", "0");
+        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request, "booth_information"));
+        List resultList = service.selectBaseList(service.select(service.readQuery(request), config));
+        if (resultList.size() > 0) {
+            com.alibaba.fastjson.JSONObject jsonObject = new com.alibaba.fastjson.JSONObject();
+            jsonObject.put("obj", resultList.get(0));
+            return success(jsonObject);
+        }
+        return success(null);
+    }
+
+    @RequestMapping(value = {"/count_group", "/count"})
+    public Map<String, Object> count(HttpServletRequest request) {
+        Map<String, String> config = service.readConfig(request);
+        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request, "booth_information"));
+        Integer value = service.selectSqlToInteger(service.groupCount(service.readQuery(request), config));
+        return success(value);
     }
 
 

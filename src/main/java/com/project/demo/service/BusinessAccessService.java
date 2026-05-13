@@ -50,6 +50,10 @@ public class BusinessAccessService {
         return scopedWhere(currentActor(request));
     }
 
+    public String scopedWhere(HttpServletRequest request, String table) {
+        return scopedWhere(table, currentActor(request));
+    }
+
     public String scopedWhere(Actor actor) {
         if (actor == null || !actor.isLoggedIn()) {
             return "1 = 0";
@@ -68,6 +72,42 @@ public class BusinessAccessService {
         return "1 = 0";
     }
 
+    public String scopedWhere(String table, Actor actor) {
+        if (actor == null || !actor.isLoggedIn()) {
+            return "1 = 0";
+        }
+        if (actor.isAdmin()) {
+            return "";
+        }
+        if (actor.isRegular()) {
+            if ("exhibition_information".equals(table) || "booth_information".equals(table)) {
+                return "";
+            }
+            return scopedWhere(actor);
+        }
+        if (!actor.isHost()) {
+            return "1 = 0";
+        }
+
+        Integer userId = actor.getUserId();
+        if ("exhibition_information".equals(table)) {
+            return "host_user = " + userId;
+        }
+        if ("booth_information".equals(table)) {
+            return boothHostWhere(userId);
+        }
+        if ("registration_information".equals(table)) {
+            return registrationHostWhere(userId);
+        }
+        if ("travel_confirmation".equals(table)) {
+            return linkedToRegistrationHostWhere(userId);
+        }
+        if ("refund_request".equals(table)) {
+            return linkedToRegistrationHostWhere(userId);
+        }
+        return "host_user = " + userId;
+    }
+
     public String requireViewAccess(String table, String idColumn, Integer id, Actor actor) {
         if (actor == null || !actor.isLoggedIn()) {
             return "请先登录";
@@ -79,7 +119,7 @@ public class BusinessAccessService {
         if (row == null) {
             return "记录不存在";
         }
-        if (actor.isHost() && actor.getUserId().equals(toInt(row.get("host_user")))) {
+        if (actor.isHost() && hasHostAccess(table, idColumn, id, actor)) {
             return null;
         }
         if (actor.isRegular()) {
@@ -108,7 +148,7 @@ public class BusinessAccessService {
         if (row == null) {
             return "记录不存在";
         }
-        if (!actor.getUserId().equals(toInt(row.get("host_user")))) {
+        if (!hasHostAccess(table, idColumn, id, actor)) {
             return "只能审核当前主办方所属展会的数据";
         }
         return null;
@@ -178,13 +218,51 @@ public class BusinessAccessService {
     private boolean isAllowedBusinessTable(String table) {
         return "registration_information".equals(table)
                 || "travel_confirmation".equals(table)
-                || "refund_request".equals(table);
+                || "refund_request".equals(table)
+                || "exhibition_information".equals(table)
+                || "booth_information".equals(table);
     }
 
     private boolean isAllowedIdColumn(String idColumn) {
         return "registration_information_id".equals(idColumn)
                 || "travel_confirmation_id".equals(idColumn)
-                || "refund_request_id".equals(idColumn);
+                || "refund_request_id".equals(idColumn)
+                || "exhibition_information_id".equals(idColumn)
+                || "booth_information_id".equals(idColumn);
+    }
+
+    private boolean hasHostAccess(String table, String idColumn, Integer id, Actor actor) {
+        if (actor == null || !actor.isHost() || id == null || id <= 0
+                || !isAllowedBusinessTable(table) || !isAllowedIdColumn(idColumn)) {
+            return false;
+        }
+        String where = scopedWhere(table, actor);
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM `" + table + "` WHERE `" + idColumn + "` = ? AND (" + where + ")",
+                Integer.class,
+                id);
+        return count != null && count > 0;
+    }
+
+    private String boothHostWhere(Integer userId) {
+        String exhibitionScope = "SELECT exhibitionconvention_number FROM exhibition_information WHERE host_user = " + userId;
+        return "(host_user = " + userId
+                + " OR exhibitionconvention_number IN (" + exhibitionScope + "))";
+    }
+
+    private String registrationHostWhere(Integer userId) {
+        String exhibitionScope = "SELECT exhibitionconvention_number FROM exhibition_information WHERE host_user = " + userId;
+        String boothScope = "SELECT booth_number FROM booth_information WHERE " + boothHostWhere(userId);
+        return "(host_user = " + userId
+                + " OR exhibitionconvention_number IN (" + exhibitionScope + ")"
+                + " OR booth_number IN (" + boothScope + "))";
+    }
+
+    private String linkedToRegistrationHostWhere(Integer userId) {
+        String registrationScope = registrationHostWhere(userId);
+        return "(host_user = " + userId
+                + " OR source_id IN (SELECT registration_information_id FROM registration_information WHERE " + registrationScope + ")"
+                + " OR order_number IN (SELECT order_number FROM registration_information WHERE " + registrationScope + "))";
     }
 
     private String safeString(Object rawValue) {

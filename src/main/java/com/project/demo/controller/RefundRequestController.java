@@ -50,7 +50,7 @@ public class RefundRequestController extends BaseController<RefundRequest, Refun
     @RequestMapping("/get_list")
     public Map<String, Object> getList(HttpServletRequest request) {
         Map<String, String> config = service.readConfig(request);
-        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request));
+        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request, "refund_request"));
         Map<String, Object> map = service.selectToPage(service.readQuery(request), config);
         return success(map);
     }
@@ -59,7 +59,7 @@ public class RefundRequestController extends BaseController<RefundRequest, Refun
     public Map<String, Object> obj(HttpServletRequest request) {
         Map<String, String> config = service.readConfig(request);
         config.put("like", "0");
-        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request));
+        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request, "refund_request"));
         List resultList = service.selectBaseList(service.select(service.readQuery(request), config));
         if (resultList.size() > 0) {
             com.alibaba.fastjson.JSONObject jsonObject = new com.alibaba.fastjson.JSONObject();
@@ -72,7 +72,7 @@ public class RefundRequestController extends BaseController<RefundRequest, Refun
     @RequestMapping(value = {"/count_group", "/count"})
     public Map<String, Object> count(HttpServletRequest request) {
         Map<String, String> config = service.readConfig(request);
-        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request));
+        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request, "refund_request"));
         Integer value = service.selectSqlToInteger(service.groupCount(service.readQuery(request), config));
         return success(value);
     }
@@ -122,8 +122,12 @@ public class RefundRequestController extends BaseController<RefundRequest, Refun
 
         RefundRequest refundRequest = buildRefundRequest(paramMap, false);
         Integer refundRequestId = getRefundRequestId(queryMap, paramMap);
+        ensureQueryId(queryMap, "refund_request_id", refundRequestId);
         String auditExamineState = stringValue(paramMap.get("examine_state"));
         BusinessAccessService.Actor actor = accessService.currentActor(request);
+        if (isAuditPayload(paramMap) && refundRequestId == null) {
+            return error(30000, "退款申请ID不能为空");
+        }
         if (refundRequestId != null && isAuditPayload(paramMap) && auditExamineState != null) {
             String permissionMessage = accessService.requireReviewAccess(
                     "refund_request", "refund_request_id", refundRequestId, actor);
@@ -348,7 +352,16 @@ public class RefundRequestController extends BaseController<RefundRequest, Refun
         if (value == null && paramMap != null) {
             value = paramMap.get("refund_request_id");
         }
+        if (value == null && paramMap != null) {
+            value = paramMap.get("id");
+        }
         return intValue(value);
+    }
+
+    private void ensureQueryId(Map<String, String> queryMap, String idColumn, Integer id) {
+        if (queryMap != null && id != null && !queryMap.containsKey(idColumn) && !queryMap.containsKey("id")) {
+            queryMap.put(idColumn, String.valueOf(id));
+        }
     }
 
     private boolean isTerminalRefundState(Integer refundRequestId) {

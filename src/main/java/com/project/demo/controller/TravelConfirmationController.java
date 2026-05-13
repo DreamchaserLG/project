@@ -45,7 +45,7 @@ public class TravelConfirmationController extends BaseController<TravelConfirmat
     @RequestMapping("/get_list")
     public Map<String, Object> getList(HttpServletRequest request) {
         Map<String, String> config = service.readConfig(request);
-        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request));
+        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request, "travel_confirmation"));
         Map<String, Object> map = service.selectToPage(service.readQuery(request), config);
         return success(map);
     }
@@ -54,7 +54,7 @@ public class TravelConfirmationController extends BaseController<TravelConfirmat
     public Map<String, Object> obj(HttpServletRequest request) {
         Map<String, String> config = service.readConfig(request);
         config.put("like", "0");
-        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request));
+        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request, "travel_confirmation"));
         List resultList = service.selectBaseList(service.select(service.readQuery(request), config));
         if (resultList.size() > 0) {
             com.alibaba.fastjson.JSONObject jsonObject = new com.alibaba.fastjson.JSONObject();
@@ -67,7 +67,7 @@ public class TravelConfirmationController extends BaseController<TravelConfirmat
     @RequestMapping(value = {"/count_group", "/count"})
     public Map<String, Object> count(HttpServletRequest request) {
         Map<String, String> config = service.readConfig(request);
-        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request));
+        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request, "travel_confirmation"));
         Integer value = service.selectSqlToInteger(service.groupCount(service.readQuery(request), config));
         return success(value);
     }
@@ -118,8 +118,12 @@ public class TravelConfirmationController extends BaseController<TravelConfirmat
         clearEmptyString(paramMap);
 
         Integer travelConfirmationId = getTravelConfirmationId(queryMap, paramMap);
+        ensureQueryId(queryMap, "travel_confirmation_id", travelConfirmationId);
         String auditExamineState = stringValue(paramMap.get("examine_state"));
         BusinessAccessService.Actor actor = accessService.currentActor(request);
+        if (isAuditPayload(paramMap) && travelConfirmationId == null) {
+            return error(30000, "行程确认ID不能为空");
+        }
         if (travelConfirmationId != null && isAuditPayload(paramMap) && auditExamineState != null) {
             String permissionMessage = accessService.requireReviewAccess(
                     "travel_confirmation", "travel_confirmation_id", travelConfirmationId, actor);
@@ -255,7 +259,16 @@ public class TravelConfirmationController extends BaseController<TravelConfirmat
         if (value == null && paramMap != null) {
             value = paramMap.get("travel_confirmation_id");
         }
+        if (value == null && paramMap != null) {
+            value = paramMap.get("id");
+        }
         return intValue(value);
+    }
+
+    private void ensureQueryId(Map<String, String> queryMap, String idColumn, Integer id) {
+        if (queryMap != null && id != null && !queryMap.containsKey(idColumn) && !queryMap.containsKey("id")) {
+            queryMap.put(idColumn, String.valueOf(id));
+        }
     }
 
     private Integer getSourceRegistrationId(Integer travelConfirmationId) {
