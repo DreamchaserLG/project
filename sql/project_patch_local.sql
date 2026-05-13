@@ -322,3 +322,10 @@ SET `get` = 1,
     `update_time` = NOW()
 WHERE `user_group` IN ('管理员', '主办用户')
   AND `path` IN ('/registration_information/view', '/travel_confirmation/view', '/refund_request/view');
+
+ALTER TABLE `registration_information`
+  MODIFY `pay_type` varchar(16) DEFAULT '' COMMENT '支付类型: 微信、支付宝';
+
+UPDATE `registration_information`
+SET `pay_type` = ''
+WHERE `pay_type` IN ('网银', '网银支付', '银行卡', '银行卡支付');

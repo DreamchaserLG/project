@@ -1081,6 +1081,11 @@ if (typeof($) === "undefined") {
 		 * @param {Number} longTime 保存时长（单位:分钟）
 		 */
 		set: function(key, value, longTime) {
+			if (key === "token") {
+				window.sessionStorage.setItem(key, value);
+				window.localStorage.removeItem(key);
+				return;
+			}
 			var expires = null;
 			if (longTime) {
 				var time = Date.now();
@@ -1098,6 +1103,9 @@ if (typeof($) === "undefined") {
 		 * @return {Object} 值
 		 */
 		get: function(key) {
+			if (key === "token") {
+				return window.sessionStorage.getItem(key);
+			}
 			var value;
 			var text = window.localStorage.getItem(key);
 			if (text && text.indexOf('{') === 0) {
@@ -1129,6 +1137,9 @@ if (typeof($) === "undefined") {
 		 * @param {Object} key 键
 		 */
 		del: function(key) {
+			if (key === "token") {
+				window.sessionStorage.removeItem(key);
+			}
 			window.localStorage.removeItem(key);
 		}
 	};

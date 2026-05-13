@@ -178,9 +178,9 @@ public class RegistrationInformationController extends BaseController<Registrati
         }
 
         if (registrationId != null && RegistrationWaitlistService.PAY_PAID.equals(String.valueOf(paramMap.get("pay_state")))) {
-            String bankMessage = validateBankPayment(paramMap);
-            if (bankMessage != null) {
-                return error(30000, bankMessage);
+            String paymentMessage = validatePaymentMethod(paramMap);
+            if (paymentMessage != null) {
+                return error(30000, paymentMessage);
             }
             String message = registrationWaitlistService.validatePaymentAllowed(registrationId);
             if (message != null) {
@@ -346,21 +346,13 @@ public class RegistrationInformationController extends BaseController<Registrati
         return null;
     }
 
-    private String validateBankPayment(Map<String, Object> paramMap) {
+    private String validatePaymentMethod(Map<String, Object> paramMap) {
         String payType = stringValue(paramMap.get("pay_type"));
-        if (!"网银".equals(payType) && !"网银支付".equals(payType) && !"银行卡".equals(payType)) {
+        if ("微信".equals(payType) || "微信支付".equals(payType)
+                || "支付宝".equals(payType) || "支付宝支付".equals(payType)) {
             return null;
         }
-
-        String account = stringValue(paramMap.get("bank_account"));
-        String password = stringValue(paramMap.get("bank_password"));
-        if (account == null || !account.matches("\\d{16}|\\d{17}|\\d{19}")) {
-            return "银行卡号必须为16、17或19位纯数字";
-        }
-        if (password == null || password.length() < 6) {
-            return "支付密码不能低于6位";
-        }
-        return null;
+        return "仅支持微信支付或支付宝支付";
     }
 
     private void applyActorForAdd(Map<String, Object> paramMap, BusinessAccessService.Actor actor) {

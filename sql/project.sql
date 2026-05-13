@@ -423,7 +423,7 @@ CREATE TABLE `registration_information`(registration_information_id int(11) NOT 
 `examine_state` varchar(16) DEFAULT '未审核' NOT NULL comment '审核状态',
 `examine_reply` varchar(255) DEFAULT '' comment '审核回复',
 `pay_state` varchar(16) DEFAULT '未支付' NOT NULL comment '支付状态',
-`pay_type` varchar(16) DEFAULT '' comment '支付类型: 微信、支付宝、网银',
+`pay_type` varchar(16) DEFAULT '' comment '支付类型: 微信、支付宝',
 `travel_confirmation_limit_times` int(8) DEFAULT 1 NOT NULL comment '行程确认限制次数',
 `refund_request_limit_times` int(8) DEFAULT 1 NOT NULL comment '退款申请限制次数',
 `escalate_state` varchar(16) DEFAULT '' comment '越级状态',
