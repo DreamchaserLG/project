@@ -57,7 +57,7 @@
 						<el-button @click="reset()" style="margin-right: 74px;" class="search_btn_reset">重置</el-button>
 																						
 
-										<el-button v-if="$check_option('/registration_information/table', 'examine')" @click="batchInfo()" class="examine_btn_state">批量审核</el-button>
+										<el-button v-if="$check_option('/registration_information/table', 'examine') || $check_action('/registration_information/table','set') || $check_action('/registration_information/view','set')" @click="batchInfo()" class="examine_btn_state">批量审核</el-button>
 														<el-button v-if="$check_action('/registration_information/table','del') || $check_action('/registration_information/view','del')" class="search_btn_del" type="danger" @click="delInfo()">删除</el-button>
 								
 				</el-col>
@@ -263,7 +263,7 @@
 						<el-button class="e-button el-button--small is-plain el-button--warning" style="margin: 5px !important;" size="small" @click="cancelRegistration(scope.row)" v-if="canCancel(scope.row)">
 						<span>{{ normalizeRegistrationStatus(scope.row) === '候补中' ? '取消候补' : '取消报名' }}</span>
 					</el-button>
-						<el-button class="e-button el-button--small is-plain el-button--primary" style="margin: 5px !important;" size="small" @click="changeSigning(scope.row, scope.$index)" v-if="$check_option('/registration_information/table', 'examine')  ">
+						<el-button class="e-button el-button--small is-plain el-button--primary" style="margin: 5px !important;" size="small" @click="changeSigning(scope.row, scope.$index)" v-if="$check_option('/registration_information/table', 'examine') || $check_action('/registration_information/table','set') || $check_action('/registration_information/view','set')">
 						<span>审核</span>
 					</el-button>
 				</div>

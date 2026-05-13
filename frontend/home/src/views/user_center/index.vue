@@ -129,6 +129,18 @@
                 </span>
                 <span>{{ formatDate(item.registration_time || item.payment_date) }}</span>
                 <el-button
+                  v-if="item.examine_state === '已通过' && !hasTravelForRegistration(item)"
+                  class="profile_refund_btn"
+                  type="primary"
+                  size="mini"
+                  @click="applyTravel(item)"
+                >行程确认</el-button>
+                <span
+                  v-else-if="hasTravelForRegistration(item)"
+                  class="page_status_tag is-success"
+                  style="margin-left: 8px;"
+                >行程已提交</span>
+                <el-button
                   v-if="item.examine_state === '已通过' && !hasRefundForRegistration(item)"
                   class="profile_refund_btn"
                   type="warning"
@@ -399,6 +411,41 @@ export default {
           (r.order_number && reg.order_number &&
             String(r.order_number) === String(reg.order_number))
       );
+    },
+    hasTravelForRegistration(reg) {
+      return this.travelList.some(
+        (r) =>
+          (r.source_table === "registration_information" &&
+            String(r.source_id) === String(reg.registration_information_id)) ||
+          (r.order_number && reg.order_number &&
+            String(r.order_number) === String(reg.order_number))
+      );
+    },
+    applyTravel(reg) {
+      const formData = {};
+      [
+        "order_number",
+        "booth_number",
+        "exhibitionconvention_number",
+        "exhibition_theme",
+        "host_user",
+        "booth_name",
+        "user_name",
+        "users_mobile_phone",
+        "number_of_registrations",
+      ].forEach((key) => {
+        if (reg[key] !== undefined && reg[key] !== null && reg[key] !== "") {
+          formData[key] = reg[key];
+        }
+      });
+      formData.source_table = "registration_information";
+      formData.source_id = reg.registration_information_id;
+      formData.source_user_id = this.profile.user_id || this.$store.state.user.user_id;
+      formData.enrolled_user = reg.enrolled_user || formData.source_user_id;
+      $.db.set("form", formData);
+      this.$router.push({
+        path: "/travel_confirmation/view",
+      });
     },
     applyRefund(reg) {
       const formData = {};

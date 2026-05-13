@@ -36,7 +36,7 @@
 						<el-button @click="reset()" style="margin-right: 74px;" class="search_btn_reset">重置</el-button>
 																						
 
-										<el-button v-if="$check_option('/refund_request/table', 'examine')" @click="batchInfo()" class="examine_btn_state">批量审核</el-button>
+										<el-button v-if="$check_option('/refund_request/table', 'examine') || $check_action('/refund_request/table','set') || $check_action('/refund_request/view','set')" @click="batchInfo()" class="examine_btn_state">批量审核</el-button>
 														<el-button v-if="$check_action('/refund_request/table','del') || $check_action('/refund_request/view','del')" class="search_btn_del" type="danger" @click="delInfo()">删除</el-button>
 								
 				</el-col>
@@ -145,7 +145,7 @@
 						 size="small">
 						<span>详情</span>
 					</router-link>
-					<el-button class="e-button el-button--small is-plain el-button--primary" style="margin: 5px !important;" size="small" @click="changeSigning(scope.row, scope.$index)" v-if="$check_option('/refund_request/table', 'examine')  ">
+					<el-button class="e-button el-button--small is-plain el-button--primary" style="margin: 5px !important;" size="small" @click="changeSigning(scope.row, scope.$index)" v-if="$check_option('/refund_request/table', 'examine') || $check_action('/refund_request/table','set') || $check_action('/refund_request/view','set')">
 						<span>审核</span>
 					</el-button>
 				</div>

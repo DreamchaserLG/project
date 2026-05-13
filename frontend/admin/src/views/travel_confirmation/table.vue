@@ -36,7 +36,7 @@
 						<el-button @click="reset()" style="margin-right: 74px;" class="search_btn_reset">重置</el-button>
 																						
 
-										<el-button v-if="$check_option('/travel_confirmation/table', 'examine')" @click="batchInfo()" class="examine_btn_state">批量审核</el-button>
+										<el-button v-if="$check_option('/travel_confirmation/table', 'examine') || $check_action('/travel_confirmation/table','set') || $check_action('/travel_confirmation/view','set')" @click="batchInfo()" class="examine_btn_state">批量审核</el-button>
 														<el-button v-if="$check_action('/travel_confirmation/table','del') || $check_action('/travel_confirmation/view','del')" class="search_btn_del" type="danger" @click="delInfo()">删除</el-button>
 								
 				</el-col>
@@ -146,7 +146,7 @@
 						 size="small">
 						<span>详情</span>
 					</router-link>
-					<el-button class="e-button el-button--small is-plain el-button--primary" style="margin: 5px !important;" size="small" @click="changeSigning(scope.row, scope.$index)" v-if="$check_option('/travel_confirmation/table', 'examine')">
+					<el-button class="e-button el-button--small is-plain el-button--primary" style="margin: 5px !important;" size="small" @click="changeSigning(scope.row, scope.$index)" v-if="$check_option('/travel_confirmation/table', 'examine') || $check_action('/travel_confirmation/table','set') || $check_action('/travel_confirmation/view','set')">
 						<span>审核</span>
 					</el-button>
 				</div>

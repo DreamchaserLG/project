@@ -315,3 +315,10 @@ SET `option` = JSON_SET(COALESCE(NULLIF(`option`, ''), '{}'), '$.examine', true)
     `update_time` = NOW()
 WHERE `user_group` IN ('管理员', '主办用户')
   AND `path` IN ('/registration_information/table', '/travel_confirmation/table', '/refund_request/table');
+
+UPDATE `auth`
+SET `get` = 1,
+    `set` = 1,
+    `update_time` = NOW()
+WHERE `user_group` IN ('管理员', '主办用户')
+  AND `path` IN ('/registration_information/view', '/travel_confirmation/view', '/refund_request/view');

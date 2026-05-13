@@ -120,8 +120,8 @@ public class RegistrationInformationController extends BaseController<Registrati
         result.put("order_number", registrationInformation.getOrder_number());
         result.put("registration_status", RegistrationWaitlistService.STATUS_CONFIRMED);
         result.put("waitlist_no", null);
-        result.put("need_pay", true);
-        result.put("message", "报名成功");
+        result.put("need_pay", false);
+        result.put("message", "报名已提交，待管理员或主办方审核");
         auditLogService.record(request, intValue(paramMap.get("create_by")), "报名", "registration_information",
                 registrationId, "成功", "新增报名记录");
         return success(result);
@@ -407,9 +407,14 @@ public class RegistrationInformationController extends BaseController<Registrati
         registrationInformation.setRegistration_notes(stringValue(paramMap.get("registration_notes")));
         registrationInformation.setSite_plan(stringValue(paramMap.get("site_plan")));
         registrationInformation.setExhibitor_documents(stringValue(paramMap.get("exhibitor_documents")));
-        registrationInformation.setExamine_state(stringValue(paramMap.get("examine_state")));
-        registrationInformation.setExamine_reply(stringValue(paramMap.get("examine_reply")));
-        registrationInformation.setPay_state(stringValue(paramMap.get("pay_state")));
+        if (isAdd) {
+            registrationInformation.setExamine_state(RegistrationWaitlistService.EXAMINE_PENDING);
+            registrationInformation.setExamine_reply("");
+        } else {
+            registrationInformation.setExamine_state(stringValue(paramMap.get("examine_state")));
+            registrationInformation.setExamine_reply(stringValue(paramMap.get("examine_reply")));
+        }
+        registrationInformation.setPay_state(isAdd ? RegistrationWaitlistService.PAY_UNPAID : stringValue(paramMap.get("pay_state")));
         registrationInformation.setPay_type(stringValue(paramMap.get("pay_type")));
         registrationInformation.setTravel_confirmation_limit_times(defaultString(paramMap.get("travel_confirmation_limit_times"), "1"));
         registrationInformation.setRefund_request_limit_times(defaultString(paramMap.get("refund_request_limit_times"), "1"));

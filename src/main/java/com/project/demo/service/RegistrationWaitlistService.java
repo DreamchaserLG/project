@@ -82,9 +82,9 @@ public class RegistrationWaitlistService {
         boolean useWaitlist = capacity > 0 && confirmedCount >= capacity;
         String registrationStatus = useWaitlist ? STATUS_WAITLIST : STATUS_CONFIRMED;
         String orderNumber = buildOrderNumber(body.get("order_number"));
-        String payState = defaultString(body.get("pay_state"), PAY_UNPAID);
-        String examineState = defaultString(body.get("examine_state"), EXAMINE_PENDING);
-        Integer waitlistNo = useWaitlist && EXAMINE_APPROVED.equals(examineState) ? nextWaitlistNo(boothId) : null;
+        String payState = PAY_UNPAID;
+        String examineState = EXAMINE_PENDING;
+        Integer waitlistNo = null;
         String boothNumber = safeString(booth.get("booth_number"));
         String exhibitionNumber = safeString(booth.get("exhibitionconvention_number"));
         String exhibitionTheme = safeString(booth.get("exhibition_theme"));
@@ -132,7 +132,7 @@ public class RegistrationWaitlistService {
                 safeString(body.get("site_plan")),
                 safeString(body.get("exhibitor_documents")),
                 examineState,
-                safeString(body.get("examine_reply")),
+                "",
                 payState,
                 safeString(body.get("pay_type")),
                 defaultString(body.get("travel_confirmation_limit_times"), "1"),
@@ -163,16 +163,16 @@ public class RegistrationWaitlistService {
         result.put("order_number", orderNumber);
         result.put("registration_status", registrationStatus);
         result.put("waitlist_no", waitlistNo);
-        result.put("need_pay", STATUS_CONFIRMED.equals(registrationStatus));
+        result.put("need_pay", false);
         result.put("message", STATUS_WAITLIST.equals(registrationStatus)
-                ? "当前展位名额已满，已加入候补队列"
-                : "报名成功");
+                ? "当前展位名额已满，候补申请已提交，待管理员或主办方审核"
+                : "报名已提交，待管理员或主办方审核");
         if (STATUS_WAITLIST.equals(registrationStatus) && waitlistNo == null) {
-            result.put("message", "当前展位名额已满，候补申请已提交，待管理员审核");
+            result.put("message", "当前展位名额已满，候补申请已提交，待管理员或主办方审核");
         } else if (STATUS_WAITLIST.equals(registrationStatus)) {
             result.put("message", "当前展位名额已满，已加入候补队列");
         } else {
-            result.put("message", "报名成功");
+            result.put("message", "报名已提交，待管理员或主办方审核");
         }
         return result;
     }
@@ -877,14 +877,14 @@ public class RegistrationWaitlistService {
             String registrationStatus, Integer waitlistNo) {
         String boothDisplay = boothDisplayName(boothName);
         if (STATUS_WAITLIST.equals(registrationStatus)) {
-            String suffix = waitlistNo == null ? "" : "，当前排位第 " + waitlistNo + " 位。";
-            notifyUser(enrolledUser, "候补报名提醒", boothDisplay + "名额已满，您已进入候补队列" + suffix);
-            notifyUser(hostUser, "新增候补报名", boothDisplay + "新增了一条候补报名记录" + suffix);
+            String suffix = waitlistNo == null ? "，待管理员或主办方审核。" : "，当前排位第 " + waitlistNo + " 位。";
+            notifyUser(enrolledUser, "候补报名提醒", boothDisplay + "名额已满，候补申请已提交" + suffix);
+            notifyUser(hostUser, "新增候补报名", boothDisplay + "新增了一条待审核候补报名记录" + suffix);
             return;
         }
 
-        notifyUser(enrolledUser, "展位报名成功", boothDisplay + "报名成功，请尽快完成支付和审核流程。");
-        notifyUser(hostUser, "新增正式报名", boothDisplay + "新增了一条正式报名记录。");
+        notifyUser(enrolledUser, "展位报名已提交", boothDisplay + "报名已提交，待管理员或主办方审核。");
+        notifyUser(hostUser, "新增正式报名", boothDisplay + "新增了一条待审核正式报名记录。");
     }
 
     private void notifyCancellation(Integer enrolledUser, Integer hostUser, String boothName,
