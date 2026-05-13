@@ -109,9 +109,7 @@ export default {
   },
   computed: {
     redirectPath() {
-      return typeof this.$route.query.redirect === "string" && this.$route.query.redirect
-        ? this.$route.query.redirect
-        : "/";
+      return "/";
     },
     validation_username() {
       const length = this.form.username.length;
@@ -153,6 +151,8 @@ export default {
           obj.login_time = login_time;
 
           if (this.allow_user.includes(obj.user_group)) {
+            localStorage.clear();
+            sessionStorage.clear();
             $.db.set("token", obj.token);
             this.$store.commit("user_set", obj);
             sessionStorage.setItem("user_id", obj.user_id);
@@ -160,11 +160,8 @@ export default {
             sessionStorage.setItem("avatar", obj.avatar || "");
             sessionStorage.setItem("user_group", obj.user_group || "");
 
-            const targetPath = this.redirectPath && this.redirectPath.startsWith("/account/")
-              ? "/"
-              : this.redirectPath;
             this.$get_auth(obj.user_group, () => {
-              this.$router.replace(targetPath).catch(() => {});
+              this.$router.replace("/").catch(() => {});
             });
             this.$message.success("登录成功");
           } else {

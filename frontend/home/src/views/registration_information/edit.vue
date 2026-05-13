@@ -557,12 +557,6 @@
 						if (result.registration_information_id) {
 							this.pay_obj.id = result.registration_information_id;
 						}
-						if (result.registration_status === '候补中') {
-							this.payModalVisible = false
-							this.$toast(result.message || '已加入候补队列', 'success');
-							history.back()
-							return
-						}
 						this.payModalVisible = true
 						return
 																																																																																							  																																																																																										this.$get("~/api/registration_information/get_list", { pay_state: "未支付", orderby: "create_time desc" },(json) => {

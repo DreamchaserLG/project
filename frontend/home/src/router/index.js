@@ -366,9 +366,6 @@ const router = new VueRouter({
 	base: process.env.BASE_URL,
 	routes,
 	scrollBehavior(to, from, savedPosition) {
-		if (savedPosition) {
-			return savedPosition;
-		}
 		return { x: 0, y: 0 };
 	}
 })
@@ -383,6 +380,7 @@ router.afterEach(() => {
 	let title = "会展管理系统-home";
 	document.title = title;
 	document.logo = "会展管理系统"
+	window.scrollTo(0, 0);
 })
 
 
@@ -397,9 +395,6 @@ router.beforeEach((to, from, next) => {
     clearLoginState(store);
     next({
       path: '/account/login',
-      query: {
-        redirect: to.fullPath,
-      },
     });
     return;
   }

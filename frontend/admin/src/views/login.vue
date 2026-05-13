@@ -94,9 +94,12 @@ export default {
 				if (res.result && res.result.obj) {
 					let obj = res.result.obj;
 					if (this.allow_user.includes(obj.user_group)) {
+						localStorage.clear();
+						sessionStorage.clear();
 						$.db.set('token', obj.token);
+						this.$store.commit('user_set', obj);
 						sessionStorage.setItem('user_group', obj.user_group);
-						this.$router.push('/');
+						this.$router.replace('/');
 						this.$message.success('登录成功');
 					} else {
 						this.$message.error('非管理员或主办用户，无权登录');

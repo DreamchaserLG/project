@@ -62,32 +62,6 @@
 					</div>
 				</div>
 
-				<div class="panel">
-					<div class="panel_header">
-						<span class="panel_title"><i class="el-icon-s-data"></i> 最近用户行为</span>
-						<el-button type="text" size="small" @click="$router.push('/user_track_log/table')">查看全部 <i class="el-icon-arrow-right"></i></el-button>
-					</div>
-					<div class="panel_body">
-						<el-table :data="recentTracks" size="small" v-loading="tracksLoading" style="width: 100%;">
-							<el-table-column prop="username" label="用户" width="120">
-								<template slot-scope="{ row }">
-									<span class="track_user">{{ row.username }}</span>
-								</template>
-							</el-table-column>
-							<el-table-column prop="event_name" label="事件" width="120">
-								<template slot-scope="{ row }">
-									<el-tag :type="eventTagType(row.event_name)" size="mini" effect="light">{{ row.event_name }}</el-tag>
-								</template>
-							</el-table-column>
-							<el-table-column prop="page" label="页面" min-width="180" show-overflow-tooltip />
-							<el-table-column prop="create_time" label="时间" width="160">
-								<template slot-scope="{ row }">
-									<span class="track_time">{{ row.create_time }}</span>
-								</template>
-							</el-table-column>
-						</el-table>
-					</div>
-				</div>
 			</div>
 
 			<div class="grid_right">
@@ -132,8 +106,6 @@ export default {
 			dataScreen: [],
 			exhibitionStats: [],
 			dashboardLoading: false,
-			recentTracks: [],
-			tracksLoading: false,
 			statIcons: [
 				'el-icon-user',
 				'el-icon-document',
@@ -148,7 +120,6 @@ export default {
 		} else {
 			this.get_list_count();
 		}
-		this.loadRecentTracks();
 	},
 	methods: {
 		async loadAdminDashboard() {
@@ -182,27 +153,6 @@ export default {
 		formatMoney(value) {
 			const num = Number(value || 0);
 			return "￥" + num.toFixed(2);
-		},
-		async loadRecentTracks() {
-			this.tracksLoading = true;
-			try {
-				const res = await this.$axios.get("/api/track/list");
-				const rows = res && res.result && Array.isArray(res.result.list) ? res.result.list : res;
-				this.recentTracks = Array.isArray(rows) ? rows.slice(0, 8) : [];
-			} catch (e) {
-				this.recentTracks = [];
-			}
-			this.tracksLoading = false;
-		},
-		eventTagType(event) {
-			const map = {
-				"页面访问": "",
-				"点击": "success",
-				"提交表单": "warning",
-				"登录": "danger",
-				"搜索": "info",
-			};
-			return map[event] || "";
 		},
 		get_list_count() {
 			let list = [
@@ -238,7 +188,7 @@ export default {
 		sign_out_fun() {
 			this.$get("~/api/user/quit", {}, () => {
 				this.$store.commit("quit");
-				this.$router.push("/login");
+				this.$router.replace("/login");
 			});
 		},
 	},
@@ -489,16 +439,6 @@ export default {
 	font-size: 13px;
 	font-weight: 500;
 	color: #093943;
-}
-
-.track_user {
-	font-weight: 500;
-	color: #093943;
-}
-
-.track_time {
-	font-size: 12px;
-	color: #8c9ba5;
 }
 
 @media (max-width: 992px) {

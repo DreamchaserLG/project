@@ -431,15 +431,6 @@ const routes = [
             title: '用户组详情'
         }
     },
-    {
-        path: '/user_track_log/table',
-        name: 'user_track_log_table',
-        component: () => import('../views/user_track_log/table.vue'),
-        meta: {
-            index: 0,
-            title: '用户行为追踪'
-        }
-    }
 ]
 
 const router = new VueRouter({
@@ -461,9 +452,6 @@ router.beforeEach((to, from, next) => {
         clearLoginState(store);
         next({
             path: "/login",
-            query: {
-                redirect: to.fullPath,
-            },
         });
         return;
     }
@@ -483,6 +471,7 @@ router.beforeEach((to, from, next) => {
 router.afterEach((to, from, next) => {
     let title = "会展管理系统-admin";
     document.title = title;
+    window.scrollTo(0, 0);
 })
 
 // 解决重载报错

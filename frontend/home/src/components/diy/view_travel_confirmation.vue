@@ -391,6 +391,16 @@
 			 * @return {String} 验证成功返回null, 失败返回错误提示
 			 */
 			async submit_check(param) {
+				if (param.source_id) {
+					const registration = await this.$get("~/api/registration_information/get_obj?", {
+						registration_information_id: param.source_id
+					});
+					const obj = registration && registration.result && registration.result.obj ? registration.result.obj : null;
+					const status = obj && obj.registration_status === "已报名" ? "报名成功" : (obj ? obj.registration_status : "");
+					if (!obj || status !== "报名成功" || obj.examine_state !== "已通过") {
+						return "当前报名尚未审核通过，无法进行行程确认";
+					}
+				}
 				if (!param.confirm_time){
 					return "确认时间不能为空";
 				}

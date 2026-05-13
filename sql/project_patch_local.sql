@@ -177,16 +177,20 @@ EXECUTE stmt_create_refund_source_index;
 DEALLOCATE PREPARE stmt_create_refund_source_index;
 
 UPDATE `registration_information`
-SET `registration_status` = '已报名'
+SET `registration_status` = '报名成功'
 WHERE `registration_status` IS NULL OR TRIM(`registration_status`) = '';
 
 UPDATE `registration_information`
-SET `registration_status` = '已报名'
+SET `registration_status` = '报名成功'
 WHERE `registration_status` IN ('退款申请', '申请退款', '退款处理');
 
 UPDATE `registration_information`
-SET `confirm_time` = IFNULL(`confirm_time`, IFNULL(`create_time`, NOW()))
+SET `registration_status` = '报名成功'
 WHERE `registration_status` = '已报名';
+
+UPDATE `registration_information`
+SET `confirm_time` = IFNULL(`confirm_time`, IFNULL(`create_time`, NOW()))
+WHERE `registration_status` = '报名成功';
 
 UPDATE `registration_information`
 SET `travel_confirmation_limit_times` = '1'
@@ -295,8 +299,9 @@ PREPARE stmt_add_travel_attendee_integer_check FROM @add_travel_attendee_integer
 EXECUTE stmt_add_travel_attendee_integer_check;
 DEALLOCATE PREPARE stmt_add_travel_attendee_integer_check;
 
-INSERT IGNORE INTO `auth` (`auth_id`,`user_group`,`mod_name`,`table_name`,`page_title`,`path`,`parent`,`parent_sort`,`position`,`mode`,`add`,`del`,`set`,`get`,`field_add`,`field_set`,`field_get`,`table_nav_name`,`table_nav`,`option`,`create_time`,`update_time`)
-VALUES ('173','管理员','用户行为追踪','user_track_log','用户行为追踪','/user_track_log/table','','0','','_blank','1','0','0','0','','','','','0','{}',NOW(),NOW());
+DELETE FROM `auth`
+WHERE `table_name` = 'user_track_log'
+   OR `path` = '/user_track_log/table';
 
 UPDATE `auth`
 SET `add` = 1, `get` = 1, `update_time` = NOW()

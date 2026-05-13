@@ -35,15 +35,37 @@ export default {
       }
     },
     sign_out(state) {
-      $.db.del("token");
-	  $.db.del("user_group");
-      sessionStorage.removeItem("user_id");
-      sessionStorage.removeItem("nickname");
-      sessionStorage.removeItem("avatar");
-      sessionStorage.removeItem("user_group");
-      state.token = null;
-      state.username = null;
+      try {
+        $.db.del("token");
+        $.db.del("user_group");
+      } catch (e) {}
+      try {
+        localStorage.clear();
+      } catch (e) {}
+      try {
+        sessionStorage.clear();
+      } catch (e) {}
       state.user_id = 0;
+      state.token = "";
+      state.username = "";
+      state.referee_id = 0;
+      state.vip = 0;
+      state.gm = 0;
+      state.mc = 0;
+      state.phone = "";
+      state.phone_state = 0;
+      state.email = "";
+      state.email_state = 0;
+      state.login_ip = "";
+      state.login_time = "";
+      state.user_group = "";
+      state.user_admin = "";
+      state.signature = "";
+      state.nickname = "";
+      state.avatar = "/img/avatar.png";
+      state.invite_code = "";
+      state.friends = "";
+      state.state = 0;
     }
   }
 }

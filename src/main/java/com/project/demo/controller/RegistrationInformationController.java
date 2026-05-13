@@ -431,7 +431,9 @@ public class RegistrationInformationController extends BaseController<Registrati
 
     private boolean isValidRegistrationStatus(String registrationStatus) {
         return RegistrationWaitlistService.STATUS_CONFIRMED.equals(registrationStatus)
+                || RegistrationWaitlistService.STATUS_CONFIRMED_LEGACY.equals(registrationStatus)
                 || RegistrationWaitlistService.STATUS_WAITLIST.equals(registrationStatus)
+                || RegistrationWaitlistService.STATUS_WAITLIST_REVIEW.equals(registrationStatus)
                 || RegistrationWaitlistService.STATUS_CANCELLED.equals(registrationStatus);
     }
 

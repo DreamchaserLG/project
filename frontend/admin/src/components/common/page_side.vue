@@ -90,11 +90,6 @@
       </el-menu-item>
     </el-submenu>
 
-    <el-submenu index="user_track_log" v-show="user_group == '管理员'">
-      <template slot="title"><i class="el-icon-s-data"></i><span ref="customTemplate10">数据管理</span></template>
-      <el-menu-item index="/user_track_log/table" v-show="user_group == '管理员'" @click="handleButtonClick(10)"><span>用户行为追踪</span></el-menu-item>
-    </el-submenu>
-
     <el-submenu index="auth" v-show="user_group == '管理员'">
       <template slot="title"><i class="el-icon-s-custom"></i><span ref="customTemplate9">权限管理</span></template>
       <el-menu-item index="/auth/table" v-show="user_group == '管理员'" @click="handleButtonClick(9)"><span>权限列表</span></el-menu-item>
@@ -131,7 +126,7 @@ export default {
         this.$refs.customTemplate7,
         this.$refs.customTemplate8,
         this.$refs.customTemplate9,
-        this.$refs.customTemplate10,
+        null,
         this.$refs.customTemplate11,
         this.$refs.customTemplate12,
       ];
@@ -156,6 +151,7 @@ export default {
       site_list.push("travel_confirmation");
       site_list.push("refund_request");
       let list = ["exam", 'evaluation', "article", "article_type", "comment", "notice"];
+      list.push("user_track_log");
       list.push("regular_user");
       list.push("host_user");
       for (var i = 0; i < tables.length; i++) {

@@ -22,12 +22,7 @@ Vue.use(plugins, {
 });
 
 import JsonExcel from 'vue-json-excel'
-import { trackPageView } from '@/utils/track'
 Vue.component('downloadExcel', JsonExcel)
-
-router.afterEach((to) => {
-  trackPageView(to.path)
-})
 
 new Vue({
   router,

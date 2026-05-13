@@ -240,10 +240,10 @@ export default {
       if (!this.waitlistInfo || !this.waitlistInfo.boothId) {
         return "";
       }
-      if (this.waitlistInfo.my_status === "候补中") {
+      if (this.waitlistInfo.my_status === "候补中" || this.waitlistInfo.my_status === "候补审核中") {
         return `您已在候补队列中，当前为第 ${this.waitlistInfo.my_waitlist_no || "-"} 位。`;
       }
-      if (this.waitlistInfo.my_status === "已报名") {
+      if (this.waitlistInfo.my_status === "报名成功" || this.waitlistInfo.my_status === "已报名") {
         if (this.waitlistInfo.my_pay_state === "未支付") {
           return "您已转为正式报名，请尽快完成支付。";
         }
@@ -442,10 +442,10 @@ export default {
       if (!this.waitlistInfo || !this.waitlistInfo.my_status) {
         return false;
       }
-      if (this.waitlistInfo.my_status === "候补中") {
+      if (this.waitlistInfo.my_status === "候补中" || this.waitlistInfo.my_status === "候补审核中") {
         return true;
       }
-      return this.waitlistInfo.my_status === "已报名"
+      return (this.waitlistInfo.my_status === "报名成功" || this.waitlistInfo.my_status === "已报名")
         && this.waitlistInfo.my_pay_state !== "已支付"
         && this.waitlistInfo.my_pay_state !== "退款中";
     },
@@ -454,7 +454,7 @@ export default {
         return;
       }
       this.$confirm(
-        this.waitlistInfo.my_status === "候补中" ? "确认取消当前候补资格？" : "确认取消当前报名？",
+        (this.waitlistInfo.my_status === "候补中" || this.waitlistInfo.my_status === "候补审核中") ? "确认取消当前候补资格？" : "确认取消当前报名？",
         "提示",
         {
           confirmButtonText: "确定",

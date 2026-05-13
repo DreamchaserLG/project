@@ -17,9 +17,12 @@ public class RegistrationWaitlistService {
     public static final String SOURCE_TABLE_BOOTH = "booth_information";
     public static final String SOURCE_TABLE_REGISTRATION = "registration_information";
 
-    public static final String STATUS_CONFIRMED = "已报名";
+    public static final String STATUS_CONFIRMED = "报名成功";
+    public static final String STATUS_CONFIRMED_LEGACY = "已报名";
     public static final String STATUS_WAITLIST = "候补中";
+    public static final String STATUS_WAITLIST_REVIEW = "候补审核中";
     public static final String STATUS_CANCELLED = "已取消";
+    public static final String TRAVEL_NOT_APPROVED_MESSAGE = "当前报名尚未审核通过，无法进行行程确认";
 
     public static final String EXAMINE_PENDING = "未审核";
     public static final String EXAMINE_APPROVED = "已通过";
@@ -72,7 +75,7 @@ public class RegistrationWaitlistService {
             String currentStatus = normalizeStatus(activeRegistration.get("registration_status"));
             Integer registrationId = toInt(activeRegistration.get("registration_information_id"));
             Integer waitlistNo = toInt(activeRegistration.get("waitlist_no"));
-            String message = STATUS_WAITLIST.equals(currentStatus)
+            String message = isWaitlistStatus(currentStatus)
                     ? "您已在当前展位候补队列中"
                     : "您已经报名该展位";
             return fail(message, registrationId, currentStatus, waitlistNo);
@@ -80,7 +83,7 @@ public class RegistrationWaitlistService {
 
         int confirmedCount = countConfirmed(boothId);
         boolean useWaitlist = capacity > 0 && confirmedCount >= capacity;
-        String registrationStatus = useWaitlist ? STATUS_WAITLIST : STATUS_CONFIRMED;
+        String registrationStatus = useWaitlist ? STATUS_WAITLIST_REVIEW : STATUS_CONFIRMED;
         String orderNumber = buildOrderNumber(body.get("order_number"));
         String payState = PAY_UNPAID;
         String examineState = EXAMINE_PENDING;
@@ -144,7 +147,7 @@ public class RegistrationWaitlistService {
                 createBy,
                 registrationStatus,
                 waitlistNo,
-                STATUS_WAITLIST.equals(registrationStatus) ? new java.sql.Timestamp(System.currentTimeMillis()) : null,
+                isWaitlistStatus(registrationStatus) ? new java.sql.Timestamp(System.currentTimeMillis()) : null,
                 STATUS_CONFIRMED.equals(registrationStatus) ? new java.sql.Timestamp(System.currentTimeMillis()) : null,
                 null);
 
@@ -164,12 +167,12 @@ public class RegistrationWaitlistService {
         result.put("registration_status", registrationStatus);
         result.put("waitlist_no", waitlistNo);
         result.put("need_pay", false);
-        result.put("message", STATUS_WAITLIST.equals(registrationStatus)
+        result.put("message", isWaitlistStatus(registrationStatus)
                 ? "当前展位名额已满，候补申请已提交，待管理员或主办方审核"
                 : "报名已提交，待管理员或主办方审核");
-        if (STATUS_WAITLIST.equals(registrationStatus) && waitlistNo == null) {
+        if (isWaitlistStatus(registrationStatus) && waitlistNo == null) {
             result.put("message", "当前展位名额已满，候补申请已提交，待管理员或主办方审核");
-        } else if (STATUS_WAITLIST.equals(registrationStatus)) {
+        } else if (isWaitlistStatus(registrationStatus)) {
             result.put("message", "当前展位名额已满，已加入候补队列");
         } else {
             result.put("message", "报名已提交，待管理员或主办方审核");
@@ -237,7 +240,7 @@ public class RegistrationWaitlistService {
             return result;
         }
 
-        if (STATUS_WAITLIST.equals(currentStatus)) {
+        if (isWaitlistStatus(currentStatus)) {
             jdbcTemplate.update(
                     "UPDATE registration_information " +
                             "SET registration_status = ?, waitlist_no = NULL, cancel_time = NOW(), update_time = NOW() "
@@ -368,7 +371,7 @@ public class RegistrationWaitlistService {
         }
 
         if (EXAMINE_REJECTED.equals(examineState)) {
-            if (STATUS_WAITLIST.equals(currentStatus)) {
+            if (isWaitlistStatus(currentStatus)) {
                 jdbcTemplate.update(
                         "UPDATE registration_information SET examine_state = ?, examine_reply = ?, registration_status = ?, "
                                 +
@@ -400,7 +403,7 @@ public class RegistrationWaitlistService {
         fillAvailableSeats(boothId, capacity);
 
         int confirmedCount = countConfirmed(boothId);
-        boolean canConfirm = STATUS_CONFIRMED.equals(currentStatus) || capacity <= 0 || confirmedCount < capacity;
+        boolean canConfirm = true;
         String nextPayState = keepOrResetPayState(currentPayState);
 
         if (canConfirm) {
@@ -504,8 +507,9 @@ public class RegistrationWaitlistService {
                         "WHERE source_table = ? AND source_id = ? " +
                         "ORDER BY " +
                         "CASE " +
-                        "WHEN registration_status = ? OR registration_status IS NULL OR registration_status = '' THEN 1 "
+                        "WHEN registration_status = ? OR registration_status = ? OR registration_status IS NULL OR registration_status = '' THEN 1 "
                         +
+                        "WHEN registration_status = ? THEN 2 " +
                         "WHEN registration_status = ? THEN 2 " +
                         "WHEN registration_status = ? THEN 3 " +
                         "ELSE 4 END, " +
@@ -513,6 +517,8 @@ public class RegistrationWaitlistService {
                 SOURCE_TABLE_BOOTH,
                 boothId,
                 STATUS_CONFIRMED,
+                STATUS_CONFIRMED_LEGACY,
+                STATUS_WAITLIST_REVIEW,
                 STATUS_WAITLIST,
                 STATUS_CANCELLED);
     }
@@ -524,8 +530,8 @@ public class RegistrationWaitlistService {
         }
 
         String status = normalizeStatus(registration.get("registration_status"));
-        if (!STATUS_CONFIRMED.equals(status)) {
-            return "只有已报名记录才能支付";
+        if (!isConfirmedStatus(status) && !isWaitlistStatus(status)) {
+            return "只有报名或候补报名记录才能支付";
         }
 
         if (EXAMINE_REJECTED.equals(safeString(registration.get("examine_state")))) {
@@ -551,12 +557,12 @@ public class RegistrationWaitlistService {
         }
 
         String status = normalizeStatus(registration.get("registration_status"));
-        if (!STATUS_CONFIRMED.equals(status)) {
-            return "只有已报名用户才能提交行程确认";
+        if (!isConfirmedStatus(status)) {
+            return TRAVEL_NOT_APPROVED_MESSAGE;
         }
 
         if (!EXAMINE_APPROVED.equals(safeString(registration.get("examine_state")))) {
-            return "审核通过后才能提交行程确认";
+            return TRAVEL_NOT_APPROVED_MESSAGE;
         }
 
         Integer limit = toPositiveInt(registration.get("travel_confirmation_limit_times"), 1);
@@ -610,7 +616,7 @@ public class RegistrationWaitlistService {
         }
 
         String status = normalizeStatus(registration.get("registration_status"));
-        if (!STATUS_CONFIRMED.equals(status)) {
+        if (!isConfirmedStatus(status)) {
             return "只有已报名用户才能发起退款";
         }
 
@@ -694,13 +700,15 @@ public class RegistrationWaitlistService {
                 "SELECT registration_information_id, registration_status, waitlist_no, pay_state " +
                         "FROM registration_information " +
                         "WHERE source_table = ? AND source_id = ? AND enrolled_user = ? " +
-                        "AND (registration_status = ? OR registration_status = ? OR registration_status IS NULL OR registration_status = '') "
+                        "AND (registration_status = ? OR registration_status = ? OR registration_status = ? OR registration_status = ? OR registration_status IS NULL OR registration_status = '') "
                         +
                         "ORDER BY registration_information_id DESC LIMIT 1",
                 SOURCE_TABLE_BOOTH,
                 boothId,
                 userId,
                 STATUS_CONFIRMED,
+                STATUS_CONFIRMED_LEGACY,
+                STATUS_WAITLIST_REVIEW,
                 STATUS_WAITLIST);
 
         return rows.isEmpty() ? null : rows.get(0);
@@ -710,11 +718,12 @@ public class RegistrationWaitlistService {
         Integer count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM registration_information " +
                         "WHERE source_table = ? AND source_id = ? " +
-                        "AND (registration_status = ? OR registration_status IS NULL OR registration_status = '')",
+                        "AND (registration_status = ? OR registration_status = ? OR registration_status IS NULL OR registration_status = '')",
                 Integer.class,
                 SOURCE_TABLE_BOOTH,
                 boothId,
-                STATUS_CONFIRMED);
+                STATUS_CONFIRMED,
+                STATUS_CONFIRMED_LEGACY);
         return count == null ? 0 : count;
     }
 
@@ -876,7 +885,7 @@ public class RegistrationWaitlistService {
     private void notifyRegistrationCreated(Integer enrolledUser, Integer hostUser, String boothName,
             String registrationStatus, Integer waitlistNo) {
         String boothDisplay = boothDisplayName(boothName);
-        if (STATUS_WAITLIST.equals(registrationStatus)) {
+        if (isWaitlistStatus(registrationStatus)) {
             String suffix = waitlistNo == null ? "，待管理员或主办方审核。" : "，当前排位第 " + waitlistNo + " 位。";
             notifyUser(enrolledUser, "候补报名提醒", boothDisplay + "名额已满，候补申请已提交" + suffix);
             notifyUser(hostUser, "新增候补报名", boothDisplay + "新增了一条待审核候补报名记录" + suffix);
@@ -971,7 +980,20 @@ public class RegistrationWaitlistService {
 
     private String normalizeStatus(Object rawValue) {
         String value = safeString(rawValue);
-        return value.isEmpty() ? STATUS_CONFIRMED : value;
+        if (value.isEmpty() || STATUS_CONFIRMED_LEGACY.equals(value)) {
+            return STATUS_CONFIRMED;
+        }
+        return value;
+    }
+
+    private boolean isConfirmedStatus(String status) {
+        return STATUS_CONFIRMED.equals(status)
+                || STATUS_CONFIRMED_LEGACY.equals(status)
+                || "审核通过".equals(status);
+    }
+
+    private boolean isWaitlistStatus(String status) {
+        return STATUS_WAITLIST.equals(status) || STATUS_WAITLIST_REVIEW.equals(status);
     }
 
     private String defaultString(Object rawValue, String defaultValue) {

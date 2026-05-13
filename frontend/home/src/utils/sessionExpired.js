@@ -68,8 +68,7 @@ export function handleSessionExpired(router, store) {
 
   if (router && path !== loginPath) {
     router.replace({
-      path: loginPath,
-      query: path ? { redirect: router.currentRoute.fullPath } : {}
+      path: loginPath
     }).catch(() => {});
   }
 

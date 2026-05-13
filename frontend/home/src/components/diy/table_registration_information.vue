@@ -255,7 +255,7 @@
               <span>支付</span>
             </el-button>
 												<el-button class="el-button el-button--small is-plain el-button--warning" style="margin: 5px !important;" size="small" @click="cancelRegistration(scope.row)" v-if="canCancel(scope.row)">
-			<span>{{ normalizeRegistrationStatus(scope.row) === '候补中' ? '取消候补' : '取消报名' }}</span>
+			<span>{{ (normalizeRegistrationStatus(scope.row) === '候补中' || normalizeRegistrationStatus(scope.row) === '候补审核中') ? '取消候补' : '取消报名' }}</span>
 		</el-button>
 								<el-button class="el-button el-button--small is-plain el-button--danger" style="margin: 5px !important;" size="small" @click="escalateToAdmin(scope.row)" v-if="canEscalate(scope.row)">
 			<span>申请越级审核</span>
@@ -438,16 +438,19 @@
       },
       normalizeRegistrationStatus(row) {
         if (!row || !row.registration_status) {
-          return "已报名";
+          return "报名成功";
+        }
+        if (row.registration_status === "已报名") {
+          return "报名成功";
         }
         return row.registration_status;
       },
       statusTagType(row) {
         let status = this.normalizeRegistrationStatus(row);
-        if (status === "已报名") {
+        if (status === "报名成功") {
           return "success";
         }
-        if (status === "候补中") {
+        if (status === "候补中" || status === "候补审核中") {
           return "warning";
         }
         if (status === "已取消") {
@@ -460,11 +463,11 @@
         if (status === "候补中" && row.examine_state === "已通过" && row.waitlist_no) {
           return "当前候补第 " + row.waitlist_no + " 位";
         }
-        if (status === "候补中" && row.examine_state !== "已通过") {
+        if ((status === "候补中" || status === "候补审核中") && row.examine_state !== "已通过") {
           return "候补申请待审核";
         }
-        if (status === "已报名" && row.examine_state === "已通过" && row.pay_state === "未支付") {
-          return "已转为正式报名，请尽快支付";
+        if (status === "报名成功" && row.examine_state === "已通过" && row.pay_state === "未支付") {
+          return "报名已审核通过，请尽快支付";
         }
         if (row.examine_state === "未通过") {
           return "审核不通过";
@@ -472,24 +475,25 @@
         return "";
       },
       canPay(row) {
-        return this.normalizeRegistrationStatus(row) === "已报名"
+        const status = this.normalizeRegistrationStatus(row);
+        return (status === "报名成功" || status === "候补审核中" || status === "候补中")
           && row.pay_state === "未支付"
           && row.examine_state !== "未通过";
       },
       canTravel(row) {
-        return this.normalizeRegistrationStatus(row) === "已报名"
+        return this.normalizeRegistrationStatus(row) === "报名成功"
           && row.examine_state === "已通过"
           && !row.travel_confirmation_limit
           && !row.travel_confirmation_status_limit;
       },
       canOpenTravel(row) {
         return row
-          && this.normalizeRegistrationStatus(row) === "已报名"
+          && this.normalizeRegistrationStatus(row) === "报名成功"
           && row.examine_state === "已通过"
           && (!!row.travel_confirmation_id || this.canTravel(row));
       },
       canRefund(row) {
-        return this.normalizeRegistrationStatus(row) === "已报名"
+        return this.normalizeRegistrationStatus(row) === "报名成功"
           && row.examine_state === "已通过"
           && row.pay_state === "已支付"
           && !row.refund_request_limit
@@ -511,11 +515,8 @@
         if (this.normalizeRegistrationStatus(row) === "已取消") {
           return "已取消的报名不能进行行程确认";
         }
-        if (this.normalizeRegistrationStatus(row) !== "已报名") {
-          return "当前报名状态不能进行行程确认";
-        }
-        if (row.examine_state !== "已通过") {
-          return "报名审核通过后才能进行行程确认";
+        if (this.normalizeRegistrationStatus(row) !== "报名成功" || row.examine_state !== "已通过") {
+          return "当前报名尚未审核通过，无法进行行程确认";
         }
         if (row.travel_confirmation_limit || row.travel_confirmation_status_limit) {
           return "当前报名记录的行程确认次数已达上限";
@@ -532,7 +533,7 @@
         if (this.normalizeRegistrationStatus(row) === "已取消") {
           return "已取消的报名不能申请退款";
         }
-        if (this.normalizeRegistrationStatus(row) !== "已报名") {
+        if (this.normalizeRegistrationStatus(row) !== "报名成功") {
           return "当前报名状态不能申请退款";
         }
         if (row.examine_state !== "已通过") {
@@ -610,16 +611,17 @@
         });
       },
       canCancel(row) {
-        if (this.normalizeRegistrationStatus(row) === "候补中") {
+        const status = this.normalizeRegistrationStatus(row);
+        if (status === "候补中" || status === "候补审核中") {
           return true;
         }
         if (row.pay_state === "退款中") {
           return false;
         }
         if (this.user.user_group === "普通用户") {
-          return this.normalizeRegistrationStatus(row) === "已报名" && row.pay_state !== "已支付";
+          return status === "报名成功" && row.pay_state !== "已支付";
         }
-        return this.normalizeRegistrationStatus(row) === "已报名";
+        return status === "报名成功";
       },
       canEscalate(row) {
         var status = this.normalizeRegistrationStatus(row);
@@ -650,7 +652,7 @@
       },
       cancelRegistration(row) {
         this.$confirm(
-          this.normalizeRegistrationStatus(row) === "候补中" ? "确认取消当前候补资格？" : "确认取消当前报名？",
+          (this.normalizeRegistrationStatus(row) === "候补中" || this.normalizeRegistrationStatus(row) === "候补审核中") ? "确认取消当前候补资格？" : "确认取消当前报名？",
           "提示",
           {
             confirmButtonText: "确定",
@@ -755,7 +757,7 @@
 		  	let _this = this
 				_this.list.map((item) => {
 					if(!item.registration_status){
-						_this.$set(item,'registration_status','已报名');
+						_this.$set(item,'registration_status','报名成功');
 					}
 				})
 			      
