@@ -3,6 +3,7 @@ import VueRouter from 'vue-router';
 import index from '../views/index.vue'
 import login from '../views/account/login.vue';
 import store from '../store';
+import { clearLoginState } from "@/utils/sessionExpired";
 Vue.use(VueRouter)
 
 const routes = [
@@ -393,20 +394,13 @@ router.beforeEach((to, from, next) => {
   const isAuthFree = authFreePaths.has(to.path);
 
   if (!token && !isAuthFree) {
+    clearLoginState(store);
     next({
       path: '/account/login',
       query: {
         redirect: to.fullPath,
       },
     });
-    return;
-  }
-
-  if (token && isAuthFree) {
-    const redirect = typeof to.query.redirect === "string" && to.query.redirect
-      ? to.query.redirect
-      : '/';
-    next(redirect);
     return;
   }
 

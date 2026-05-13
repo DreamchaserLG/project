@@ -4,6 +4,8 @@ import index from '../views/index.vue';
 import login from '../views/login.vue';
 import forgot from '../views/forgot.vue';
 import register from '../views/register.vue';
+import store from '../store';
+import { clearLoginState } from "@/utils/sessionExpired";
 Vue.use(VueRouter)
 
 const routes = [
@@ -453,9 +455,23 @@ router.beforeEach((to, from, next) => {
     }
 
     const authFreePaths = ['/login', '/forgot', '/register', '/filePreview'];
-    if (!authFreePaths.includes(to.path)) {
+    const isAuthFree = authFreePaths.includes(to.path);
+    const cacheToken = store?.state?.user?.token || $.db.get("token");
+    if (!cacheToken && !isAuthFree) {
+        clearLoginState(store);
+        next({
+            path: "/login",
+            query: {
+                redirect: to.fullPath,
+            },
+        });
+        return;
+    }
+
+    if (!isAuthFree) {
         const userGroup = sessionStorage.getItem("user_group") || "";
         if (userGroup === "普通用户") {
+            clearLoginState(store);
             next("/login");
             return;
         }
