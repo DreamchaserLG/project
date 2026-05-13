@@ -93,6 +93,7 @@
 																<el-col v-if="$check_field('get','confirm_time') || $check_field('add','confirm_time') || $check_field('set','confirm_time')" :xs="24" :sm="12" :lg="8" class="el_form_item_warp">
 				<el-form-item label="确认时间" prop="confirm_time">
 								<el-date-picker :disabled="disabledObj['confirm_time_isDisabled']" v-if="(form['travel_confirmation_id'] && $check_field('set','confirm_time')) || (!form['travel_confirmation_id'] && $check_field('add','confirm_time'))" id="confirm_time"
+						value-format="yyyy-MM-dd HH:mm:ss"
 						v-model="form['confirm_time']" type="datetime" placeholder="选择日期时间">
 					</el-date-picker>
 					<div v-else-if="$check_field('get','confirm_time')">{{form['confirm_time']}}</div>

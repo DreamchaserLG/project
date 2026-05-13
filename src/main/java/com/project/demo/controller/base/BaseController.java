@@ -24,6 +24,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -265,31 +266,52 @@ public class BaseController<E, S extends BaseService<E>> {
     }
 
     public Timestamp parseToTimestamp(String timeStr) {
-        try {
-            // 判断是否为 "yyyy-MM-dd HH:mm:ss" 格式
-            if (timeStr.contains(" ")) {
-                return Timestamp.valueOf(timeStr); // 直接转换
-            }
-
-            // 判断是否为 "yyyy-MM-dd" 格式
-            if (timeStr.matches("\\d{4}-\\d{2}-\\d{2}")) {
-                LocalDate localDate = LocalDate.parse(timeStr);
-                LocalDateTime localDateTime = localDate.atStartOfDay(); // 默认时间为 00:00:00
-                return Timestamp.valueOf(localDateTime);
-            }
-
-            // 判断是否为 "HH:mm:ss" 格式
-            if (timeStr.matches("\\d{2}:\\d{2}:\\d{2}")) {
-                LocalTime localTime = LocalTime.parse(timeStr);
-                LocalDateTime localDateTime = LocalDate.now().atTime(localTime); // 假设当前日期
-                return Timestamp.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
-            }
-
-            // 如果都不匹配，抛出异常
-            throw new IllegalArgumentException("无法识别的时间格式：" + timeStr);
-
-        } catch (Exception e) {
-            throw new IllegalArgumentException("时间字符串解析失败：" + timeStr, e);
+        if (timeStr == null) {
+            throw new IllegalArgumentException("时间字符串不能为空");
         }
+        String normalizedTime = timeStr.trim();
+        if (normalizedTime.isEmpty()
+                || "null".equalsIgnoreCase(normalizedTime)
+                || "undefined".equalsIgnoreCase(normalizedTime)) {
+            throw new IllegalArgumentException("时间字符串不能为空");
+        }
+        if (normalizedTime.matches("^\\d{10,13}$")) {
+            long raw = Long.parseLong(normalizedTime);
+            return new Timestamp(normalizedTime.length() == 10 ? raw * 1000L : raw);
+        }
+        DateTimeFormatter[] dateTimeFormatters = new DateTimeFormatter[]{
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"),
+                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"),
+                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
+        };
+        for (DateTimeFormatter formatter : dateTimeFormatters) {
+            try {
+                return Timestamp.valueOf(LocalDateTime.parse(normalizedTime, formatter));
+            } catch (Exception ignored) {
+            }
+        }
+        DateTimeFormatter[] dateFormatters = new DateTimeFormatter[]{
+                DateTimeFormatter.ofPattern("yyyy-MM-dd")
+        };
+        for (DateTimeFormatter formatter : dateFormatters) {
+            try {
+                return Timestamp.valueOf(LocalDate.parse(normalizedTime, formatter).atStartOfDay());
+            } catch (Exception ignored) {
+            }
+        }
+        DateTimeFormatter[] timeFormatters = new DateTimeFormatter[]{
+                DateTimeFormatter.ofPattern("HH:mm:ss"),
+                DateTimeFormatter.ofPattern("HH:mm")
+        };
+        for (DateTimeFormatter formatter : timeFormatters) {
+            try {
+                LocalTime localTime = LocalTime.parse(normalizedTime, formatter);
+                LocalDateTime localDateTime = LocalDate.now().atTime(localTime);
+                return Timestamp.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
+            } catch (Exception ignored) {
+            }
+        }
+        throw new IllegalArgumentException("无法识别的时间格式：" + timeStr);
     }
 }
