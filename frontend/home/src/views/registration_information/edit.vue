@@ -177,7 +177,7 @@
 								<!-- 数字 -->
 						<div class="diy_field diy_number">
 							<div class="input-block" v-if="(form['number_of_registrations'] && $check_field('set','number_of_registrations')) || (!form['number_of_registrations'] && $check_field('add','number_of_registrations'))">
-								<input type="number" id="form_number_of_registrations" v-model.number="form['number_of_registrations']" placeholder="请输入报名人数" :disabled="disabledObj['number_of_registrations_isDisabled']" />
+								<input type="number" min="1" step="1" id="form_number_of_registrations" v-model.number="form['number_of_registrations']" placeholder="请输入报名人数" :disabled="disabledObj['number_of_registrations_isDisabled']" />
 															</div>
 							<span v-else-if="$check_field('get','number_of_registrations')">{{ form['number_of_registrations'] }}</span>
 						</div>
@@ -372,11 +372,11 @@
               <div class="pay_ebank" v-if="pay_obj.payActiveName == '网银支付'">
                 <div class="pay_ebank_item">
                   <div class="pay_ebank_title">请输入网银账号：</div>
-                  <el-input class="pay_ebank_input" v-model="pay_obj.account" placeholder="请输入网银账号"></el-input>
+                  <el-input class="pay_ebank_input" v-model="pay_obj.account" maxlength="19" placeholder="请输入网银账号" @input="pay_obj.account = String(pay_obj.account || '').replace(/\D/g, '').slice(0, 19)"></el-input>
                 </div>
                 <div class="pay_ebank_item">
-                  <div class="pay_ebank_title">请输入支付密码，6位数字：</div>
-                  <el-input class="pay_ebank_input" placeholder="请输入密码" v-model="pay_obj.password" show-password maxlength="6"></el-input>
+                  <div class="pay_ebank_title">请输入支付密码：</div>
+                  <el-input class="pay_ebank_input" placeholder="请输入密码" v-model="pay_obj.password" show-password maxlength="32"></el-input>
                 </div>
               </div>
             </div>
@@ -451,7 +451,7 @@
 							"enrolled_user": 0,
 							"user_name": "",
 							"users_mobile_phone": "",
-							"number_of_registrations": 0,
+							"number_of_registrations": 1,
 							"enterprise_qualifications": "",
 							"registration_notes": "",
 							"site_plan": "",
@@ -471,7 +471,7 @@
 							"enrolled_user": 0, // 报名用户
 							"user_name":  '', // 用户姓名
 							"users_mobile_phone":  '', // 用户手机
-							"number_of_registrations":  0, // 报名人数
+							"number_of_registrations":  1, // 报名人数
 							"enterprise_qualifications":  '', // 企业资质
 							"registration_notes":  '', // 报名备注
 							"site_plan":  '', // 场地平面图
@@ -495,7 +495,7 @@
 							"enrolled_user": 0, // 报名用户
 							"user_name":  '', // 用户姓名
 							"users_mobile_phone":  '', // 用户手机
-							"number_of_registrations":  0, // 报名人数
+							"number_of_registrations":  1, // 报名人数
 							"enterprise_qualifications":  '', // 企业资质
 							"registration_notes":  '', // 报名备注
 							"site_plan":  '', // 场地平面图
@@ -545,10 +545,27 @@
 		  return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
 		},
 		confirmPayStep() {
+			if (this.isBankPay() && !this.validateBankPay()) {
+				return;
+			}
             if (this.pay_obj.payActiveName == "微信支付" || this.pay_obj.payActiveName == "支付宝支付" || this.pay_obj.payActiveName == "网银支付") {
               this.pay_step = 2
             }
             },
+		isBankPay() {
+			return this.pay_obj.payActiveName === "网银支付";
+		},
+		validateBankPay() {
+			if (!/^\d{16}$|^\d{17}$|^\d{19}$/.test(String(this.pay_obj.account || ""))) {
+				this.$toast("银行卡号必须为16、17或19位纯数字", "danger");
+				return false;
+			}
+			if (!this.pay_obj.password || this.pay_obj.password.length < 6) {
+				this.$toast("支付密码不能低于6位", "danger");
+				return false;
+			}
+			return true;
+		},
 		async openPayModal(){
 						let param = this.form;
 			param.create_by = this.$store.state.user.user_id;
@@ -613,11 +630,16 @@
 				user_id:'9999'
 			}
 					if (payTyep == "pay") {
+					if (this.isBankPay() && !this.validateBankPay()) {
+						return;
+					}
 					let payName = this.pay_obj.payActiveName;
             	let payType = payName.endsWith("支付") ? payName.slice(0, -2) : payName;
 					let param = {
 					pay_state: '已支付',
 						pay_type: payType,
+						bank_account: this.pay_obj.account,
+						bank_password: this.pay_obj.password,
 					}
 																																																					// 更新支付状态
 				this.$post("~/api/registration_information/set?registration_information_id="+this.pay_obj.id, param, (res) => {
@@ -671,6 +693,9 @@
        * @return {String} 验证成功返回null, 失败返回错误提示
        */
       async submit_check(param) {
+		if (!param.number_of_registrations || Number(param.number_of_registrations) < 1) {
+			return "报名人数不能小于1人";
+		}
 																																																																																						var registration_notes_SensitiveWords = await this.filterSensitiveWords(param.registration_notes)
 		if(registration_notes_SensitiveWords.length > 0){
 			return '报名备注中包含敏感词: ' + registration_notes_SensitiveWords.join(',')

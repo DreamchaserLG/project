@@ -7,6 +7,7 @@ import com.project.demo.dao.AccessTokenMapper;
 import com.project.demo.entity.AccessToken;
 import com.project.demo.entity.User;
 import com.project.demo.entity.UserGroup;
+import com.project.demo.service.AuditLogService;
 import com.project.demo.service.UserGroupService;
 import com.project.demo.service.UserService;
 
@@ -52,13 +53,20 @@ public class UserController extends BaseController<User, UserService> {
     @Autowired
     private AccessTokenMapper accessTokenMapper;
 
+    @Autowired
+    private AuditLogService auditLogService;
+
     /**
      * 注册
      * @param user
      * @return
      */
     @PostMapping("register")
-    public Map<String, Object> signUp(@RequestBody User user) {
+    public Map<String, Object> signUp(@RequestBody User user, HttpServletRequest request) {
+        String passwordMessage = validatePassword(user.getPassword());
+        if (passwordMessage != null) {
+            return error(30000, passwordMessage);
+        }
         // 查询用户
         Map<String, String> query = new HashMap<>();
         Map<String,Object> map = JSON.parseObject(JSON.toJSONString(user));
@@ -67,8 +75,9 @@ public class UserController extends BaseController<User, UserService> {
         if (list.size()>0){
             return error(30000, "用户已存在");
         }
-		        map.put("password",service.encryption(String.valueOf(map.get("password"))));
-		        service.insert(map);
+        map.put("password",service.encryption(String.valueOf(map.get("password"))));
+        service.insert(map);
+        auditLogService.record(request, null, "注册", "user", user.getUsername(), "成功", user.getUserGroup());
         return success(1);
     }
 
@@ -93,6 +102,10 @@ public class UserController extends BaseController<User, UserService> {
         if(password == null || password.length() == 0){
             return error(30000, "密码不能为空");
         }
+        String passwordMessage = validatePassword(password);
+        if (passwordMessage != null) {
+            return error(30000, passwordMessage);
+        }
 
         // 查询用户
         Map<String, String> query = new HashMap<>();
@@ -104,8 +117,9 @@ public class UserController extends BaseController<User, UserService> {
             JSONObject form2 = new JSONObject();
             // 修改用户密码
             query2.put("user_id",o.getUserId());
-			            form2.put("password",service.encryption(password));
-			            service.update(query, service.readConfig(request), form2);
+            form2.put("password",service.encryption(password));
+            service.update(query, service.readConfig(request), form2);
+            auditLogService.record(request, o.getUserId(), "重置密码", "user", o.getUserId(), "成功", "找回密码");
             return success(1);
         }
         return error(70000,"用户不存在");
@@ -184,7 +198,7 @@ public class UserController extends BaseController<User, UserService> {
             return error(30000,"用户非可用状态，不能登录");
         }
 				        String md5password = service.encryption(password);
-				            if (byUsername.getPassword().equals(md5password)) {
+            if (byUsername.getPassword().equals(md5password)) {
                 // 存储Token到数据库
                 AccessToken accessToken = new AccessToken();
                 accessToken.setToken(UUID.randomUUID().toString().replaceAll("-", ""));
@@ -198,6 +212,7 @@ public class UserController extends BaseController<User, UserService> {
                 user.put("token", accessToken.getToken());
                 JSONObject ret = new JSONObject();
                 ret.put("obj",user);
+                auditLogService.record(httpServletRequest, byUsername.getUserId(), "登录", "user", byUsername.getUserId(), "成功", "");
                 return success(ret);
             } else {
                 return error(30000, "账号或密码不正确");
@@ -219,14 +234,20 @@ public class UserController extends BaseController<User, UserService> {
         // 根据UserId和旧密码获取用户
         Map<String, String> query = new HashMap<>();
         String o_password = data.get("o_password");
+        String newPassword = data.get("password");
+        String passwordMessage = validatePassword(newPassword);
+        if (passwordMessage != null) {
+            return error(30000, passwordMessage);
+        }
         query.put("user_id" ,String.valueOf(userId));
-		        query.put("password" ,service.encryption(o_password));
+        query.put("password" ,service.encryption(o_password));
 		        int count = service.selectBaseCount(service.count(query, service.readConfig(request)));
         if(count > 0){
             // 修改密码
             Map<String,Object> form = new HashMap<>();
-			            form.put("password",service.encryption(data.get("password")));
-			            service.update(query,service.readConfig(request),form);
+            form.put("password",service.encryption(newPassword));
+            service.update(query,service.readConfig(request),form);
+            auditLogService.record(request, userId, "修改密码", "user", userId, "成功", "");
             return success(1);
         }
         return error(10000,"密码修改失败！");
@@ -314,7 +335,6 @@ public class UserController extends BaseController<User, UserService> {
     private void saveAccessToken(AccessToken accessToken, Duration duration) {
         try {
             redisTemplate.opsForValue().set(accessToken.getToken(), accessToken, duration);
-            return;
         } catch (Exception e) {
             log.warn("Redis unavailable, fallback to database token storage: {}", e.getMessage());
         }
@@ -372,6 +392,16 @@ public class UserController extends BaseController<User, UserService> {
         return System.currentTimeMillis() > expireAt;
     }
 
+    private String validatePassword(String password) {
+        if (password == null || password.trim().isEmpty()) {
+            return "密码不能为空";
+        }
+        if (password.length() < 6) {
+            return "密码长度不能低于6位";
+        }
+        return null;
+    }
+
     /**
      * 重写add
      * @return
@@ -380,8 +410,14 @@ public class UserController extends BaseController<User, UserService> {
     @Transactional
     public Map<String, Object> add(HttpServletRequest request) throws IOException {
         Map<String,Object> map = service.readBody(request.getReader());
-		        map.put("password",service.encryption(String.valueOf(map.get("password"))));
-		        service.insert(map);
+        String passwordMessage = validatePassword(map.get("password") == null ? null : String.valueOf(map.get("password")));
+        if (passwordMessage != null) {
+            return error(30000, passwordMessage);
+        }
+        map.put("password",service.encryption(String.valueOf(map.get("password"))));
+        service.insert(map);
+        auditLogService.record(request, map.get("create_by") == null ? null : Integer.valueOf(String.valueOf(map.get("create_by"))),
+                "新增用户", "user", map.get("username"), "成功", String.valueOf(map.get("user_group")));
         return success(1);
     }
 

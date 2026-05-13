@@ -10,10 +10,20 @@
 									<el-input v-model="query.order_number"></el-input>
 								</el-form-item>
 				</el-col>
-																								<el-col :xs="24" :sm="24" :lg="8" class="el_form_search_wrap" v-if="$check_field('get','user_name')">
+				<el-col :xs="24" :sm="24" :lg="8" class="el_form_search_wrap" v-if="$check_field('get','user_name')">
 					<el-form-item label="用户姓名">
 									<el-input v-model="query.user_name"></el-input>
 								</el-form-item>
+				</el-col>
+				<el-col :xs="24" :sm="24" :lg="8" class="el_form_search_wrap">
+					<el-form-item label="审核状态">
+						<el-select v-model="query.examine_state">
+							<el-option value="">全部</el-option>
+							<el-option value="未审核">未审核</el-option>
+							<el-option value="已通过">已通过</el-option>
+							<el-option value="未通过">未通过</el-option>
+						</el-select>
+					</el-form-item>
 				</el-col>
 													</el-row>
 	<el-row class="rows row2">
@@ -26,6 +36,7 @@
 						<el-button @click="reset()" style="margin-right: 74px;" class="search_btn_reset">重置</el-button>
 																						
 
+										<el-button v-if="$check_option('/travel_confirmation/table', 'examine')" @click="batchInfo()" class="examine_btn_state">批量审核</el-button>
 														<el-button v-if="$check_action('/travel_confirmation/table','del') || $check_action('/travel_confirmation/view','del')" class="search_btn_del" type="danger" @click="delInfo()">删除</el-button>
 								
 				</el-col>
@@ -89,6 +100,16 @@
 							{{ scope.row["number_of_attendees"] }}
 									</template>
 					</el-table-column>
+				<el-table-column label="审核状态" prop="examine_state" min-width="100">
+				<template slot-scope="scope">
+					<span v-if="scope.row['examine_state'] == '未审核'" style="color: red;">未审核</span>
+					<span v-else-if="scope.row['examine_state'] == '已通过'" style="color: green;">已通过</span>
+					<span v-else-if="scope.row['examine_state'] == '未通过'" style="color: gray;">未通过</span>
+					<span v-else>{{ scope.row['examine_state'] || '-' }}</span>
+				</template>
+			</el-table-column>
+			<el-table-column label="审核回复" prop="examine_reply" min-width="200">
+			</el-table-column>
 	
 			<el-table-column prop="extra" @sort-change="$sortChange" label="信息" min-width="300" v-if="hasExtraData" >
 				<template slot-scope="scope">
@@ -125,6 +146,9 @@
 						 size="small">
 						<span>详情</span>
 					</router-link>
+					<el-button class="e-button el-button--small is-plain el-button--primary" style="margin: 5px !important;" size="small" @click="changeSigning(scope.row, scope.$index)" v-if="$check_option('/travel_confirmation/table', 'examine')">
+						<span>审核</span>
+					</el-button>
 				</div>
 				</template>
 			</el-table-column>
@@ -138,6 +162,23 @@
 			</el-pagination>
 		</div>
 		<!-- /分页器 -->
+		<el-dialog title="审核" :visible.sync="dialogVisible" width="30%" :show-close="true">
+			<el-form ref="verifyForm" :rules="rules" :model="verifyItem">
+				<el-form-item label="审核状态" prop="examine_state">
+					<el-radio-group v-model="verifyItem.examine_state">
+						<el-radio label="已通过" value="已通过"></el-radio>
+						<el-radio label="未通过" value="未通过"></el-radio>
+					</el-radio-group>
+				</el-form-item>
+				<el-form-item label="审核回复" prop="reply">
+					<el-input type="textarea" placeholder="请填写审核回复" v-model="verifyItem.examine_reply"></el-input>
+				</el-form-item>
+			</el-form>
+			<span slot="footer" class="dialog-footer">
+				<el-button @click="dialogVisible = false">取消</el-button>
+				<el-button type="primary" @click="assureVerify">确定</el-button>
+			</span>
+		</el-dialog>
 												<el-dialog title="重要提醒" :visible.sync="showModal" width="400px" :before-close="closeModal">
 			<div style="text-align: center">
 				<p style="margin-bottom: 16px; font-size: 16px; color: #333;">
@@ -174,12 +215,21 @@
 
 				// 字段ID
 				field: "travel_confirmation_id",
+				dialogVisible: false,
+				verifyIdx: 0,
+				verifyItem: {},
+				rules: {
+				  "examine_state": [
+				    { required: true, message: '请选择审核状态', trigger: 'change' },
+				  ],
+				},
 														// 查询
 				query: {
 					"size":  7,
 					"page": 1,
 								"order_number": "",
 																"user_name": "",
+					"examine_state":"",
 											"login_time": "",
 					"create_time": "",
 					"orderby": `create_time desc`
@@ -187,6 +237,8 @@
 
 				// 数据
 				list: [],
+				batchAllState: false,
+				batchAllList: [],
 																										// 用户列表
 				list_user_host_user: [],
 									// 用户列表
@@ -226,6 +278,49 @@
 			closeModal(){
 				this.showModal = false;
 				},
+			changeSigning(query, index) {
+			  let beforeQuery=JSON.parse(JSON.stringify(query));
+			  this.verifyIdx = index;
+			  this.verifyItem = beforeQuery;
+				this.verifyItem.examine_state = "";
+			  this.batchAllState = false;
+			  this.batchAllList = [];
+			  this.dialogVisible = true;
+			},
+			batchAll(list) {
+				this.batchAllState = true;
+				this.batchAllList = list;
+				this.verifyItem = { examine_state: "", examine_reply: "" };
+				this.dialogVisible = true;
+			},
+			assureVerify() {
+				let _this = this;
+				let examineForm = this.$refs["verifyForm"];
+				examineForm.validate(async (valid) => {
+					if (!valid) {
+						return;
+					}
+					let rows = this.batchAllState ? this.batchAllList : [this.verifyItem];
+					if (rows.length === 0) {
+						_this.$toast("请选择要操作的数据", "danger");
+						return;
+					}
+					for (var i = 0; i < rows.length; i++) {
+						let url = "~/api/travel_confirmation/set?travel_confirmation_id=" + rows[i]["travel_confirmation_id"];
+						let json = await _this.$post(url,{
+							'examine_state': _this.verifyItem.examine_state,
+							'examine_reply': _this.verifyItem.examine_reply,
+						});
+						if (json.error) {
+							_this.$toast(json.error.message, "danger");
+							return;
+						}
+					}
+					_this.$toast("审核成功", "success");
+					_this.dialogVisible = false;
+					_this.get_list();
+				})
+			},
 			/**
 			 * @description 获取到列表事件
 			 * @param {Object} res 响应结果

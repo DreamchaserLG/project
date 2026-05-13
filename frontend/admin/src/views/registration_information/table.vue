@@ -376,11 +376,11 @@
 					<div class="pay_ebank" v-if="pay_obj.payActiveName == '网银支付'">
 						<div class="pay_ebank_item">
 							<div class="pay_ebank_title">请输入网银账号：</div>
-							<el-input class="pay_ebank_input" v-model="pay_obj.account" placeholder="请输入网银账号"></el-input>
+							<el-input class="pay_ebank_input" v-model="pay_obj.account" maxlength="19" placeholder="请输入网银账号" @input="pay_obj.account = String(pay_obj.account || '').replace(/\D/g, '').slice(0, 19)"></el-input>
 						</div>
 						<div class="pay_ebank_item">
-							<div class="pay_ebank_title">请输入支付密码，6位数字：</div>
-							<el-input class="pay_ebank_input" placeholder="请输入密码" v-model="pay_obj.password" show-password maxlength="6"></el-input>
+							<div class="pay_ebank_title">请输入支付密码：</div>
+							<el-input class="pay_ebank_input" placeholder="请输入密码" v-model="pay_obj.password" show-password maxlength="32"></el-input>
 						</div>
 					</div>
 				</div>
@@ -843,10 +843,27 @@
 				this.payModalVisible = true
 			},
 			confirmPayStep() {
+				if (this.isBankPay() && !this.validateBankPay()) {
+					return;
+				}
 				if (this.pay_obj.payActiveName == "微信支付" || this.pay_obj.payActiveName == "支付宝支付" || this.pay_obj.payActiveName == "网银支付") {
 					this.pay_step = 2
 				}
 				},
+			isBankPay() {
+				return this.pay_obj.payActiveName === "网银支付";
+			},
+			validateBankPay() {
+				if (!/^\d{16}$|^\d{17}$|^\d{19}$/.test(String(this.pay_obj.account || ""))) {
+					this.$toast("银行卡号必须为16、17或19位纯数字", "danger");
+					return false;
+				}
+				if (!this.pay_obj.password || this.pay_obj.password.length < 6) {
+					this.$toast("支付密码不能低于6位", "danger");
+					return false;
+				}
+				return true;
+			},
 			submitPay(){
 									let message_inform1 = {
 						title: '用户支付订单成功',
@@ -856,20 +873,15 @@
 						user_id: '9999'
 					}
 								let _this = this;
-				if(_this.pay_obj.payActiveName == "网银"){
-					if(_this.pay_obj.account == ""){
-						_this.$toast("请输入网银账号", 'danger');
-						return false
-					}
-					if(_this.pay_obj.password.length < 6){
-						_this.$toast("请输入6位数的支付密码", 'danger');
+				if(_this.isBankPay()){
+					if(!_this.validateBankPay()){
 						return false
 					}
 				}
 				let url = this.$toUrl(this.query, "~/api/registration_information/set?registration_information_id="+this.pay_obj.id);
 				let name = this.pay_obj.payActiveName;
             	let payType = name.endsWith("支付") ? name.slice(0, -2) : name;
-				let param = {"pay_state":"已支付","pay_type":payType}
+				let param = {"pay_state":"已支付","pay_type":payType,"bank_account":this.pay_obj.account,"bank_password":this.pay_obj.password}
 																																																					this.$post(url, param, function(json, status) {
 					console.log("提交结果：" ,json);
 					if (json.result) {

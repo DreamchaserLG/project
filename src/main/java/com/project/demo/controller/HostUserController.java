@@ -1,6 +1,7 @@
 package com.project.demo.controller;
 
 import com.project.demo.entity.HostUser;
+import com.project.demo.service.AuditLogService;
 import com.project.demo.service.HostUserService;
 import com.alibaba.fastjson.JSON;
 import com.project.demo.entity.User;
@@ -29,12 +30,15 @@ import java.util.*;
 @RequestMapping("/host_user")
 public class HostUserController extends BaseController<HostUser, HostUserService> {
 
+    private final AuditLogService auditLogService;
+
     /**
      * 主办用户对象
      */
     @Autowired
-    public HostUserController(HostUserService service) {
+    public HostUserController(HostUserService service, AuditLogService auditLogService) {
         setService(service);
+        this.auditLogService = auditLogService;
     }
 
 
@@ -55,6 +59,8 @@ public class HostUserController extends BaseController<HostUser, HostUserService
         host_user.setUserId(paramMap.get("user_id")==null?null:Integer.valueOf(String.valueOf(paramMap.get("user_id"))));
                                                             host_user.setCreate_by(paramMap.get("create_by")==null?null:Integer.valueOf(String.valueOf(paramMap.get("create_by"))));
         this.addEntity(host_user);
+        auditLogService.record(request, paramMap.get("create_by") == null ? null : Integer.valueOf(String.valueOf(paramMap.get("create_by"))),
+                "新增主办方资料", "host_user", paramMap.get("user_id"), "成功", host_user.getCompany_name());
         System.out.println("主办用户新增成功");
         return success(1);
     }
@@ -76,6 +82,9 @@ public class HostUserController extends BaseController<HostUser, HostUserService
                 host_user.setExamine_state(paramMap.get("examine_state")==null?null:String.valueOf(paramMap.get("examine_state")));
         host_user.setUserId(paramMap.get("user_id")==null?null:Integer.valueOf(String.valueOf(paramMap.get("user_id"))));
                     this.setEntity(queryMap,configMap,host_user);
+        auditLogService.record(request, "修改个人信息", "host_user",
+                queryMap.get("host_user_id") == null ? queryMap.get("id") : queryMap.get("host_user_id"),
+                "成功", host_user.getCompany_name());
         System.out.println("主办用户修改成功");
         return success(1);
     }
@@ -90,7 +99,7 @@ public class HostUserController extends BaseController<HostUser, HostUserService
      */
     @Transactional
     @GetMapping("/update_examine_state")
-    public String updateExamineState(Long id, String newState) throws IOException {
+    public String updateExamineState(Long id, String newState, HttpServletRequest request) throws IOException {
         // 检查传入的状态是否合法
         if (!newState.equals("未审核") && !newState.equals("已通过") && !newState.equals("未通过")) {
             return "非法的审核状态";
@@ -105,6 +114,7 @@ public class HostUserController extends BaseController<HostUser, HostUserService
             // 更新审核状态
             host_user.setExamine_state(newState);
             this.setEntity(queryMap,new HashMap<>(),host_user);
+            auditLogService.record(request, "审核主办用户", "host_user", id, "成功", newState);
 
             return "审核成功";
         } else {

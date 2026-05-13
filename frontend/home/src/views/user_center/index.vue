@@ -394,8 +394,10 @@ export default {
     hasRefundForRegistration(reg) {
       return this.refundList.some(
         (r) =>
-          String(r.order_number) === String(reg.order_number) ||
-          String(r.enrolled_user) === String(reg.enrolled_user)
+          (r.source_table === "registration_information" &&
+            String(r.source_id) === String(reg.registration_information_id)) ||
+          (r.order_number && reg.order_number &&
+            String(r.order_number) === String(reg.order_number))
       );
     },
     applyRefund(reg) {
@@ -418,6 +420,10 @@ export default {
       if (this.profile.nickname || this.profile.username) {
         formData.user_name = this.profile.nickname || this.profile.username;
       }
+      formData.source_table = "registration_information";
+      formData.source_id = reg.registration_information_id;
+      formData.source_user_id = this.profile.user_id || this.$store.state.user.user_id;
+      formData.enrolled_user = reg.enrolled_user || formData.source_user_id;
       $.db.set("form", formData);
       this.$router.push({
         path: "/refund_request/view",

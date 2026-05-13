@@ -175,8 +175,8 @@
 				else if(!password){
 					ret = "密码不能为空!";
 				}
-							else if(password.length > 16 || password.length < 6){
-					ret = "密码长度应为6到16个字符之间！";
+							else if(password.length < 6){
+					ret = "密码长度不能低于6位！";
 				}
 							else if(nickname && nickname.length > 12 || nickname.length < 2){
 					ret = "昵称长度应为2个字符到12个字符之间";

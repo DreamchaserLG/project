@@ -50,6 +50,14 @@ public class RegistrationWaitlistService {
             return fail("请先登录后再报名");
         }
 
+        Double numberOfRegistrations = toDouble(body.get("number_of_registrations"));
+        if (numberOfRegistrations == null || numberOfRegistrations < 1) {
+            return fail("报名人数不能小于1人");
+        }
+        if (Math.floor(numberOfRegistrations) != numberOfRegistrations) {
+            return fail("报名人数必须为正整数");
+        }
+
         Map<String, Object> booth = getBoothForUpdate(boothId);
 
         if (booth == null) {
@@ -118,7 +126,7 @@ public class RegistrationWaitlistService {
                 userId,
                 safeString(body.get("user_name")),
                 safeString(body.get("users_mobile_phone")),
-                defaultNumberOfRegistrations(body.get("number_of_registrations")),
+                numberOfRegistrations,
                 safeString(body.get("enterprise_qualifications")),
                 safeString(body.get("registration_notes")),
                 safeString(body.get("site_plan")),
@@ -380,7 +388,7 @@ public class RegistrationWaitlistService {
                         false,
                         "已审核不通过");
             }
-            return cancelRegistration(registrationId, "瀹℃牳鏈€氳繃", reply);
+            return cancelRegistration(registrationId, "审核未通过", reply);
         }
 
         Map<String, Object> booth = getBoothForUpdate(boothId);
@@ -570,6 +578,31 @@ public class RegistrationWaitlistService {
         return null;
     }
 
+    public String validateTravelAttendeesAllowed(Integer registrationId, Double attendees) {
+        Map<String, Object> registration = getRegistration(registrationId);
+        if (registration == null) {
+            return "报名记录不存在";
+        }
+
+        if (attendees == null || attendees < 1) {
+            return "行程确认人数不能小于1人";
+        }
+        if (Math.floor(attendees) != attendees) {
+            return "行程确认人数必须为正整数";
+        }
+
+        Double registeredPeople = toDouble(registration.get("number_of_registrations"));
+        if (registeredPeople == null || registeredPeople < 1) {
+            return "报名人数异常，不能提交行程确认";
+        }
+
+        if (attendees > registeredPeople) {
+            return "行程确认人数不能超过报名人数";
+        }
+
+        return null;
+    }
+
     public String validateRefundRequestAllowed(Integer registrationId) {
         Map<String, Object> registration = getRegistration(registrationId);
         if (registration == null) {
@@ -634,9 +667,9 @@ public class RegistrationWaitlistService {
         }
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT registration_information_id, order_number, source_table, source_id, source_user_id, enrolled_user, "
+                "SELECT registration_information_id, order_number, booth_number, exhibitionconvention_number, exhibition_theme, source_table, source_id, source_user_id, enrolled_user, "
                         +
-                        "host_user, booth_name, registration_status, waitlist_no, pay_state, examine_state, examine_reply, "
+                        "host_user, booth_name, booth_prices, user_name, users_mobile_phone, registration_status, waitlist_no, pay_state, examine_state, examine_reply, number_of_registrations, "
                         +
                         "travel_confirmation_limit_times, refund_request_limit_times " +
                         "FROM registration_information WHERE registration_information_id = ? LIMIT 1",

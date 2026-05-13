@@ -45,7 +45,12 @@ export default {
   },
   computed: {
     visibleItems() {
-      return this.menuItems.filter((item) => !item.permission || this.$check_action(item.permission, "get"));
+      return this.menuItems.filter((item) => {
+        if (this.$store.state.user.user_group === "主办用户" && item.path.indexOf("/data_statistics/") === 0) {
+          return false;
+        }
+        return !item.permission || this.$check_action(item.permission, "get");
+      });
     },
   },
   methods: {

@@ -1,6 +1,7 @@
 package com.project.demo.controller;
 
 import com.project.demo.entity.ExhibitionInformation;
+import com.project.demo.service.AuditLogService;
 import com.project.demo.service.ExhibitionInformationService;
 import com.alibaba.fastjson.JSON;
 import com.project.demo.controller.base.BaseController;
@@ -18,6 +19,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -28,12 +33,16 @@ import java.util.*;
 @RequestMapping("/exhibition_information")
 public class ExhibitionInformationController extends BaseController<ExhibitionInformation, ExhibitionInformationService> {
 
+    private final AuditLogService auditLogService;
+
     /**
      * 会展信息对象
      */
     @Autowired
-    public ExhibitionInformationController(ExhibitionInformationService service) {
+    public ExhibitionInformationController(ExhibitionInformationService service,
+                                           AuditLogService auditLogService) {
         setService(service);
+        this.auditLogService = auditLogService;
     }
 
 
@@ -46,6 +55,11 @@ public class ExhibitionInformationController extends BaseController<ExhibitionIn
             Object value = entry.getValue();
             return value instanceof String && ((String) value).isEmpty();
         });
+        String eventTime = normalizeEventTime(paramMap.get("event_time"));
+        if (eventTime == null) {
+            return error(30000, "会展结束时间必须至少晚于开始时间3小时");
+        }
+        paramMap.put("event_time", eventTime);
         ExhibitionInformation exhibition_information = new ExhibitionInformation();
             exhibition_information.setExhibitionconvention_number(paramMap.get("exhibitionconvention_number")==null?null:String.valueOf(paramMap.get("exhibitionconvention_number")));
                             exhibition_information.setExhibition_theme(paramMap.get("exhibition_theme")==null?null:String.valueOf(paramMap.get("exhibition_theme")));
@@ -65,6 +79,8 @@ public class ExhibitionInformationController extends BaseController<ExhibitionIn
         exhibition_information.setExamine_state(paramMap.get("examine_state")==null?null:String.valueOf(paramMap.get("examine_state")));
                                                             exhibition_information.setCreate_by(paramMap.get("create_by")==null?null:Integer.valueOf(String.valueOf(paramMap.get("create_by"))));
         this.addEntity(exhibition_information);
+        auditLogService.record(request, paramMap.get("create_by") == null ? null : Integer.valueOf(String.valueOf(paramMap.get("create_by"))),
+                "创建展会", "exhibition_information", null, "成功", exhibition_information.getExhibition_theme());
         System.out.println("会展信息新增成功");
         return success(1);
     }
@@ -79,6 +95,13 @@ public class ExhibitionInformationController extends BaseController<ExhibitionIn
             Object value = entry.getValue();
             return value instanceof String && ((String) value).isEmpty();
         });
+        if (paramMap.containsKey("event_time")) {
+            String eventTime = normalizeEventTime(paramMap.get("event_time"));
+            if (eventTime == null) {
+                return error(30000, "会展结束时间必须至少晚于开始时间3小时");
+            }
+            paramMap.put("event_time", eventTime);
+        }
         ExhibitionInformation exhibition_information = new ExhibitionInformation();
             exhibition_information.setExhibitionconvention_number(paramMap.get("exhibitionconvention_number")==null?null:String.valueOf(paramMap.get("exhibitionconvention_number")));
                     exhibition_information.setExhibition_theme(paramMap.get("exhibition_theme")==null?null:String.valueOf(paramMap.get("exhibition_theme")));
@@ -96,9 +119,49 @@ public class ExhibitionInformationController extends BaseController<ExhibitionIn
         exhibition_information.setCollect_len(paramMap.get("collect_len")==null?null:Integer.valueOf(String.valueOf(paramMap.get("collect_len"))));
         exhibition_information.setComment_len(paramMap.get("comment_len")==null?null:Integer.valueOf(String.valueOf(paramMap.get("comment_len"))));
         exhibition_information.setExamine_state(paramMap.get("examine_state")==null?null:String.valueOf(paramMap.get("examine_state")));
-                    this.setEntity(queryMap,configMap,exhibition_information);
+        this.setEntity(queryMap,configMap,exhibition_information);
+        auditLogService.record(request, "修改展会", "exhibition_information",
+                queryMap.get("exhibition_information_id"), "成功", exhibition_information.getExhibition_theme());
         System.out.println("会展信息修改成功");
         return success(1);
+    }
+
+    private String normalizeEventTime(Object rawValue) {
+        if (rawValue == null) {
+            return null;
+        }
+        String value = String.valueOf(rawValue).trim();
+        if (value.isEmpty() || "null".equalsIgnoreCase(value) || "undefined".equalsIgnoreCase(value)) {
+            return null;
+        }
+
+        Pattern pattern = Pattern.compile("\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}(?::\\d{2})?");
+        Matcher matcher = pattern.matcher(value);
+        List<String> times = new ArrayList<String>();
+        while (matcher.find()) {
+            times.add(matcher.group().replace('T', ' '));
+        }
+        if (times.size() < 2) {
+            return null;
+        }
+
+        LocalDateTime start = parseDateTime(times.get(0));
+        LocalDateTime end = parseDateTime(times.get(1));
+        if (start == null || end == null || end.isBefore(start.plusHours(3))) {
+            return null;
+        }
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        return formatter.format(start) + " 至 " + formatter.format(end);
+    }
+
+    private LocalDateTime parseDateTime(String value) {
+        try {
+            String normalized = value.length() == 16 ? value + ":00" : value;
+            return LocalDateTime.parse(normalized, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        } catch (Exception e) {
+            return null;
+        }
     }
 
 

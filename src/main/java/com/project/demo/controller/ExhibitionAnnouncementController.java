@@ -1,6 +1,7 @@
 package com.project.demo.controller;
 
 import com.project.demo.entity.ExhibitionAnnouncement;
+import com.project.demo.service.AuditLogService;
 import com.project.demo.service.ExhibitionAnnouncementService;
 import com.alibaba.fastjson.JSON;
 import com.project.demo.controller.base.BaseController;
@@ -28,12 +29,16 @@ import java.util.*;
 @RequestMapping("/exhibition_announcement")
 public class ExhibitionAnnouncementController extends BaseController<ExhibitionAnnouncement, ExhibitionAnnouncementService> {
 
+    private final AuditLogService auditLogService;
+
     /**
      * 会展公告对象
      */
     @Autowired
-    public ExhibitionAnnouncementController(ExhibitionAnnouncementService service) {
+    public ExhibitionAnnouncementController(ExhibitionAnnouncementService service,
+                                            AuditLogService auditLogService) {
         setService(service);
+        this.auditLogService = auditLogService;
     }
 
 
@@ -51,12 +56,7 @@ public class ExhibitionAnnouncementController extends BaseController<ExhibitionA
                             exhibition_announcement.setAnnouncement_type(paramMap.get("announcement_type")==null?null:String.valueOf(paramMap.get("announcement_type")));
                             exhibition_announcement.setExhibitionconvention_number(paramMap.get("exhibitionconvention_number")==null?null:String.valueOf(paramMap.get("exhibitionconvention_number")));
                             exhibition_announcement.setHost_user(paramMap.get("host_user")==null?null:Integer.valueOf(String.valueOf(paramMap.get("host_user"))));
-                            if (paramMap.get("release_time" ) != null && !StringUtils.isEmpty(String.valueOf(paramMap.get("release_time" )))) {
-            String timStr = String.valueOf(paramMap.get("release_time" ));
-            exhibition_announcement.setRelease_time(parseToTimestamp(timStr));
-        } else {
-            exhibition_announcement.setRelease_time(null);
-        }
+                            exhibition_announcement.setRelease_time(new java.sql.Timestamp(System.currentTimeMillis()));
                             exhibition_announcement.setAnnouncement_image(paramMap.get("announcement_image")==null?null:String.valueOf(paramMap.get("announcement_image")));
                             exhibition_announcement.setAnnouncement_vuser_ideo(paramMap.get("announcement_vuser_ideo")==null?null:String.valueOf(paramMap.get("announcement_vuser_ideo")));
                             exhibition_announcement.setAnnouncement_content(paramMap.get("announcement_content")==null?null:String.valueOf(paramMap.get("announcement_content")));
@@ -66,6 +66,8 @@ public class ExhibitionAnnouncementController extends BaseController<ExhibitionA
         exhibition_announcement.setComment_len(paramMap.get("comment_len")==null?null:Integer.valueOf(String.valueOf(paramMap.get("comment_len"))));
                                                             exhibition_announcement.setCreate_by(paramMap.get("create_by")==null?null:Integer.valueOf(String.valueOf(paramMap.get("create_by"))));
         this.addEntity(exhibition_announcement);
+        auditLogService.record(request, paramMap.get("create_by") == null ? null : Integer.valueOf(String.valueOf(paramMap.get("create_by"))),
+                "创建公告", "exhibition_announcement", null, "成功", exhibition_announcement.getAnnouncement_title());
         System.out.println("会展公告新增成功");
         return success(1);
     }
@@ -85,12 +87,7 @@ public class ExhibitionAnnouncementController extends BaseController<ExhibitionA
                     exhibition_announcement.setAnnouncement_type(paramMap.get("announcement_type")==null?null:String.valueOf(paramMap.get("announcement_type")));
                     exhibition_announcement.setExhibitionconvention_number(paramMap.get("exhibitionconvention_number")==null?null:String.valueOf(paramMap.get("exhibitionconvention_number")));
                     exhibition_announcement.setHost_user(paramMap.get("host_user")==null?null:Integer.valueOf(String.valueOf(paramMap.get("host_user"))));
-                    if (paramMap.get("release_time" ) != null && !StringUtils.isEmpty(String.valueOf(paramMap.get("release_time" )))) {
-            String timStr = String.valueOf(paramMap.get("release_time" ));
-            exhibition_announcement.setRelease_time(parseToTimestamp(timStr));
-        } else {
-            exhibition_announcement.setRelease_time(null);
-        }
+                    // 发布时间由系统生成，编辑时忽略前端传入值，避免人为篡改。
                     exhibition_announcement.setAnnouncement_image(paramMap.get("announcement_image")==null?null:String.valueOf(paramMap.get("announcement_image")));
                     exhibition_announcement.setAnnouncement_vuser_ideo(paramMap.get("announcement_vuser_ideo")==null?null:String.valueOf(paramMap.get("announcement_vuser_ideo")));
                     exhibition_announcement.setAnnouncement_content(paramMap.get("announcement_content")==null?null:String.valueOf(paramMap.get("announcement_content")));
@@ -98,7 +95,9 @@ public class ExhibitionAnnouncementController extends BaseController<ExhibitionA
         exhibition_announcement.setPraise_len(paramMap.get("praise_len")==null?null:Integer.valueOf(String.valueOf(paramMap.get("praise_len"))));
         exhibition_announcement.setCollect_len(paramMap.get("collect_len")==null?null:Integer.valueOf(String.valueOf(paramMap.get("collect_len"))));
         exhibition_announcement.setComment_len(paramMap.get("comment_len")==null?null:Integer.valueOf(String.valueOf(paramMap.get("comment_len"))));
-                    this.setEntity(queryMap,configMap,exhibition_announcement);
+        this.setEntity(queryMap,configMap,exhibition_announcement);
+        auditLogService.record(request, "修改公告", "exhibition_announcement",
+                queryMap.get("exhibition_announcement_id"), "成功", exhibition_announcement.getAnnouncement_title());
         System.out.println("会展公告修改成功");
         return success(1);
     }

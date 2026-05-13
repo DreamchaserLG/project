@@ -1,7 +1,10 @@
 package com.project.demo.controller;
 
 import com.project.demo.controller.base.BaseController;
+import com.project.demo.constant.FindConfig;
 import com.project.demo.entity.RegistrationInformation;
+import com.project.demo.service.AuditLogService;
+import com.project.demo.service.BusinessAccessService;
 import com.project.demo.service.RegistrationInformationService;
 import com.project.demo.service.RegistrationWaitlistService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,12 +27,48 @@ import java.util.concurrent.ThreadLocalRandom;
 public class RegistrationInformationController extends BaseController<RegistrationInformation, RegistrationInformationService> {
 
     private final RegistrationWaitlistService registrationWaitlistService;
+    private final AuditLogService auditLogService;
+    private final BusinessAccessService accessService;
 
     @Autowired
     public RegistrationInformationController(RegistrationInformationService service,
-                                             RegistrationWaitlistService registrationWaitlistService) {
+                                             RegistrationWaitlistService registrationWaitlistService,
+                                             AuditLogService auditLogService,
+                                             BusinessAccessService accessService) {
         setService(service);
         this.registrationWaitlistService = registrationWaitlistService;
+        this.auditLogService = auditLogService;
+        this.accessService = accessService;
+    }
+
+    @RequestMapping("/get_list")
+    public Map<String, Object> getList(HttpServletRequest request) {
+        Map<String, String> config = service.readConfig(request);
+        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request));
+        Map<String, Object> map = service.selectToPage(service.readQuery(request), config);
+        return success(map);
+    }
+
+    @RequestMapping("/get_obj")
+    public Map<String, Object> obj(HttpServletRequest request) {
+        Map<String, String> config = service.readConfig(request);
+        config.put("like", "0");
+        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request));
+        List resultList = service.selectBaseList(service.select(service.readQuery(request), config));
+        if (resultList.size() > 0) {
+            com.alibaba.fastjson.JSONObject jsonObject = new com.alibaba.fastjson.JSONObject();
+            jsonObject.put("obj", resultList.get(0));
+            return success(jsonObject);
+        }
+        return success(null);
+    }
+
+    @RequestMapping(value = {"/count_group", "/count"})
+    public Map<String, Object> count(HttpServletRequest request) {
+        Map<String, String> config = service.readConfig(request);
+        config.put(FindConfig.SQLHWERE, accessService.scopedWhere(request));
+        Integer value = service.selectSqlToInteger(service.groupCount(service.readQuery(request), config));
+        return success(value);
     }
 
     @PostMapping("/add")
@@ -37,12 +76,24 @@ public class RegistrationInformationController extends BaseController<Registrati
     public Map<String, Object> add(HttpServletRequest request) throws IOException {
         Map<String, Object> paramMap = service.readBody(request.getReader());
         clearEmptyString(paramMap);
+        BusinessAccessService.Actor actor = accessService.currentActor(request);
+        if (!actor.isLoggedIn()) {
+            return error(30000, "请先登录后再报名");
+        }
+        applyActorForAdd(paramMap, actor);
+
+        String numberMessage = validateRegistrationPeople(paramMap.get("number_of_registrations"));
+        if (numberMessage != null) {
+            return error(30000, numberMessage);
+        }
 
         if (isBoothRegistration(paramMap)) {
             Map<String, Object> result = registrationWaitlistService.createBoothRegistration(paramMap);
             if (!Boolean.TRUE.equals(result.get("ok"))) {
                 return error(30000, String.valueOf(result.get("message")));
             }
+            auditLogService.record(request, intValue(paramMap.get("create_by")), "报名", "registration_information",
+                    result.get("registration_information_id"), "成功", String.valueOf(result.get("message")));
             return success(result);
         }
 
@@ -71,6 +122,8 @@ public class RegistrationInformationController extends BaseController<Registrati
         result.put("waitlist_no", null);
         result.put("need_pay", true);
         result.put("message", "报名成功");
+        auditLogService.record(request, intValue(paramMap.get("create_by")), "报名", "registration_information",
+                registrationId, "成功", "新增报名记录");
         return success(result);
     }
 
@@ -82,10 +135,27 @@ public class RegistrationInformationController extends BaseController<Registrati
         Map<String, Object> paramMap = service.readBody(request.getReader());
         clearEmptyString(paramMap);
 
+        if (paramMap.containsKey("number_of_registrations")) {
+            String numberMessage = validateRegistrationPeople(paramMap.get("number_of_registrations"));
+            if (numberMessage != null) {
+                return error(30000, numberMessage);
+            }
+        }
+
         Integer registrationId = getRegistrationId(queryMap, paramMap);
         String auditExamineState = stringValue(paramMap.get("examine_state"));
+        BusinessAccessService.Actor actor = accessService.currentActor(request);
 
         if (registrationId != null && isAuditPayload(paramMap) && auditExamineState != null) {
+            String permissionMessage = accessService.requireReviewAccess(
+                    "registration_information", "registration_information_id", registrationId, actor);
+            if (permissionMessage != null) {
+                return error(30000, permissionMessage);
+            }
+            String repeatMessage = validateAuditNotRepeated(registrationId);
+            if (repeatMessage != null) {
+                return error(30000, repeatMessage);
+            }
             Map<String, Object> result = registrationWaitlistService.auditRegistration(
                     registrationId,
                     auditExamineState,
@@ -94,10 +164,24 @@ public class RegistrationInformationController extends BaseController<Registrati
             if (!Boolean.TRUE.equals(result.get("ok"))) {
                 return error(30000, String.valueOf(result.get("message")));
             }
+            auditLogService.record(request, "审核报名", "registration_information",
+                    registrationId, "成功", auditExamineState);
             return success(result);
         }
 
+        if (registrationId != null) {
+            String permissionMessage = accessService.requireViewAccess(
+                    "registration_information", "registration_information_id", registrationId, actor);
+            if (permissionMessage != null) {
+                return error(30000, permissionMessage);
+            }
+        }
+
         if (registrationId != null && RegistrationWaitlistService.PAY_PAID.equals(String.valueOf(paramMap.get("pay_state")))) {
+            String bankMessage = validateBankPayment(paramMap);
+            if (bankMessage != null) {
+                return error(30000, bankMessage);
+            }
             String message = registrationWaitlistService.validatePaymentAllowed(registrationId);
             if (message != null) {
                 return error(30000, message);
@@ -106,6 +190,8 @@ public class RegistrationInformationController extends BaseController<Registrati
 
         RegistrationInformation registrationInformation = buildRegistrationEntity(paramMap, false);
         this.setEntity(queryMap, configMap, registrationInformation);
+        auditLogService.record(request, intValue(paramMap.get("create_by")), "修改报名", "registration_information",
+                registrationId, "成功", "更新报名信息");
 
         Object examineState = paramMap.get("examine_state");
         if (registrationId != null && RegistrationWaitlistService.EXAMINE_REJECTED.equals(String.valueOf(examineState))) {
@@ -121,7 +207,13 @@ public class RegistrationInformationController extends BaseController<Registrati
 
     @PostMapping("/cancel/{registrationId}")
     @Transactional
-    public Map<String, Object> cancel(@PathVariable Integer registrationId) {
+    public Map<String, Object> cancel(@PathVariable Integer registrationId, HttpServletRequest request) {
+        BusinessAccessService.Actor actor = accessService.currentActor(request);
+        String permissionMessage = accessService.requireViewAccess(
+                "registration_information", "registration_information_id", registrationId, actor);
+        if (permissionMessage != null) {
+            return error(30000, permissionMessage);
+        }
         Map<String, Object> result = registrationWaitlistService.cancelRegistration(
                 registrationId,
                 "取消报名",
@@ -130,12 +222,14 @@ public class RegistrationInformationController extends BaseController<Registrati
         if (!Boolean.TRUE.equals(result.get("ok"))) {
             return error(30000, String.valueOf(result.get("message")));
         }
+        auditLogService.record(request, "取消报名", "registration_information", registrationId, "成功",
+                String.valueOf(result.get("message")));
         return success(result);
     }
 
     @Transactional
     @GetMapping("/update_examine_state")
-    public String updateExamineState(Long id, String newState, String examineReply) throws IOException {
+    public String updateExamineState(Long id, String newState, String examineReply, HttpServletRequest request) throws IOException {
         if (!RegistrationWaitlistService.EXAMINE_PENDING.equals(newState)
                 && !RegistrationWaitlistService.EXAMINE_APPROVED.equals(newState)
                 && !RegistrationWaitlistService.EXAMINE_REJECTED.equals(newState)) {
@@ -144,6 +238,13 @@ public class RegistrationInformationController extends BaseController<Registrati
 
         if (id == null) {
             return "审核失败：报名记录不存在";
+        }
+
+        BusinessAccessService.Actor actor = accessService.currentActor(request);
+        String permissionMessage = accessService.requireReviewAccess(
+                "registration_information", "registration_information_id", id.intValue(), actor);
+        if (permissionMessage != null) {
+            return permissionMessage;
         }
 
         Map<String, Object> auditResultMap = registrationWaitlistService.auditRegistration(
@@ -181,7 +282,7 @@ public class RegistrationInformationController extends BaseController<Registrati
 
     @Transactional
     @GetMapping("/update_pay_state")
-    public String updatePayState(Long id, String newState) throws IOException {
+    public String updatePayState(Long id, String newState, HttpServletRequest request) throws IOException {
         if (!RegistrationWaitlistService.PAY_UNPAID.equals(newState)
                 && !RegistrationWaitlistService.PAY_PAID.equals(newState)
                 && !RegistrationWaitlistService.PAY_REFUNDING.equals(newState)
@@ -191,6 +292,13 @@ public class RegistrationInformationController extends BaseController<Registrati
 
         if (id == null) {
             return "支付失败：报名记录不存在";
+        }
+
+        BusinessAccessService.Actor actor = accessService.currentActor(request);
+        String permissionMessage = accessService.requireViewAccess(
+                "registration_information", "registration_information_id", id.intValue(), actor);
+        if (permissionMessage != null) {
+            return permissionMessage;
         }
 
         if (RegistrationWaitlistService.PAY_PAID.equals(newState)) {
@@ -210,6 +318,62 @@ public class RegistrationInformationController extends BaseController<Registrati
         registrationInformation.setPay_state(newState);
         this.setEntity(queryMap, new HashMap<String, String>(), registrationInformation);
         return "支付成功";
+    }
+
+    private String validateRegistrationPeople(Object rawValue) {
+        Double value = doubleValue(rawValue);
+        if (value == null || value < 1) {
+            return "报名人数不能小于1人";
+        }
+        if (Math.floor(value) != value) {
+            return "报名人数必须为正整数";
+        }
+        return null;
+    }
+
+    private String validateAuditNotRepeated(Integer registrationId) {
+        Map<String, String> queryMap = new HashMap<String, String>();
+        queryMap.put("registration_information_id", String.valueOf(registrationId));
+        RegistrationInformation registrationInformation = service.findOne(queryMap);
+        if (registrationInformation == null) {
+            return "报名记录不存在";
+        }
+        String state = stringValue(registrationInformation.getExamine_state());
+        if (RegistrationWaitlistService.EXAMINE_APPROVED.equals(state)
+                || RegistrationWaitlistService.EXAMINE_REJECTED.equals(state)) {
+            return "当前报名已审核，请勿重复审核";
+        }
+        return null;
+    }
+
+    private String validateBankPayment(Map<String, Object> paramMap) {
+        String payType = stringValue(paramMap.get("pay_type"));
+        if (!"网银".equals(payType) && !"网银支付".equals(payType) && !"银行卡".equals(payType)) {
+            return null;
+        }
+
+        String account = stringValue(paramMap.get("bank_account"));
+        String password = stringValue(paramMap.get("bank_password"));
+        if (account == null || !account.matches("\\d{16}|\\d{17}|\\d{19}")) {
+            return "银行卡号必须为16、17或19位纯数字";
+        }
+        if (password == null || password.length() < 6) {
+            return "支付密码不能低于6位";
+        }
+        return null;
+    }
+
+    private void applyActorForAdd(Map<String, Object> paramMap, BusinessAccessService.Actor actor) {
+        if (actor == null || !actor.isLoggedIn()) {
+            return;
+        }
+        if (actor.isRegular()) {
+            paramMap.put("enrolled_user", actor.getUserId());
+            paramMap.put("create_by", actor.getUserId());
+            paramMap.put("source_user_id", actor.getUserId());
+        } else {
+            putIfMissing(paramMap, "create_by", actor.getUserId());
+        }
     }
 
     private RegistrationInformation buildRegistrationEntity(Map<String, Object> paramMap, boolean isAdd) {
@@ -253,10 +417,21 @@ public class RegistrationInformationController extends BaseController<Registrati
         registrationInformation.setSource_table(stringValue(paramMap.get("source_table")));
         registrationInformation.setSource_id(intValue(paramMap.get("source_id")));
         registrationInformation.setSource_user_id(intValue(paramMap.get("source_user_id")));
-        registrationInformation.setRegistration_status(stringValue(paramMap.get("registration_status")));
+        String registrationStatus = stringValue(paramMap.get("registration_status"));
+        if (isAdd) {
+            registrationInformation.setRegistration_status(RegistrationWaitlistService.STATUS_CONFIRMED);
+        } else if (isValidRegistrationStatus(registrationStatus)) {
+            registrationInformation.setRegistration_status(registrationStatus);
+        }
         registrationInformation.setWaitlist_no(intValue(paramMap.get("waitlist_no")));
         registrationInformation.setCreate_by(intValue(paramMap.get("create_by")));
         return registrationInformation;
+    }
+
+    private boolean isValidRegistrationStatus(String registrationStatus) {
+        return RegistrationWaitlistService.STATUS_CONFIRMED.equals(registrationStatus)
+                || RegistrationWaitlistService.STATUS_WAITLIST.equals(registrationStatus)
+                || RegistrationWaitlistService.STATUS_CANCELLED.equals(registrationStatus);
     }
 
     private boolean isBoothRegistration(Map<String, Object> paramMap) {
@@ -269,6 +444,12 @@ public class RegistrationInformationController extends BaseController<Registrati
             Object value = entry.getValue();
             return value instanceof String && ((String) value).trim().isEmpty();
         });
+    }
+
+    private void putIfMissing(Map<String, Object> paramMap, String key, Object value) {
+        if (paramMap.get(key) == null || isBadValue(String.valueOf(paramMap.get(key)))) {
+            paramMap.put(key, value);
+        }
     }
 
     private Integer getRegistrationId(Map<String, String> queryMap, Map<String, Object> paramMap) {

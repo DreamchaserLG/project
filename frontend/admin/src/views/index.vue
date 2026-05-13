@@ -18,11 +18,11 @@
 		</div>
 
 		<div class="dashboard_stats" v-if="dataScreen && dataScreen.length">
-			<div
+				<div
 				v-for="(item, idx) in dataScreen"
 				:key="idx"
 				class="stat_card"
-				@click="$router.push('/' + item.field + '/table')"
+				@click="goStat(item)"
 			>
 				<div class="stat_icon" :class="'stat_icon_' + (idx % 4)">
 					<i :class="statIcons[idx % statIcons.length]"></i>
@@ -36,6 +36,23 @@
 
 		<div class="dashboard_grid">
 			<div class="grid_left">
+				<div class="panel" v-if="user_group === '管理员'">
+					<div class="panel_header">
+						<span class="panel_title"><i class="el-icon-s-marketing"></i> 最近展会动态</span>
+					</div>
+					<div class="panel_body">
+						<el-table :data="exhibitionStats" size="small" v-loading="dashboardLoading" style="width: 100%;">
+							<el-table-column prop="exhibition_theme" label="展会名称" min-width="180" show-overflow-tooltip />
+							<el-table-column prop="event_time" label="时间" min-width="170" show-overflow-tooltip />
+							<el-table-column prop="registration_people" label="报名人数" width="90" align="right" />
+							<el-table-column prop="attendee_people" label="实际参展" width="90" align="right" />
+							<el-table-column label="成交额" width="110" align="right">
+								<template slot-scope="{ row }">{{ formatMoney(row.revenue) }}</template>
+							</el-table-column>
+						</el-table>
+					</div>
+				</div>
+
 				<div class="panel">
 					<div class="panel_header">
 						<span class="panel_title"><i class="el-icon-s-grid"></i> 快捷操作</span>
@@ -113,6 +130,8 @@ export default {
 	data() {
 		return {
 			dataScreen: [],
+			exhibitionStats: [],
+			dashboardLoading: false,
 			recentTracks: [],
 			tracksLoading: false,
 			statIcons: [
@@ -124,15 +143,52 @@ export default {
 		};
 	},
 	created() {
-		this.get_list_count();
+		if (this.user_group === "管理员") {
+			this.loadAdminDashboard();
+		} else {
+			this.get_list_count();
+		}
 		this.loadRecentTracks();
 	},
 	methods: {
+		async loadAdminDashboard() {
+			this.dashboardLoading = true;
+			try {
+				const summary = await this.$get("~/api/admin_dashboard/summary");
+				if (summary && summary.result) {
+					const s = summary.result;
+					this.dataScreen = [
+						{ label: "总展会数", value: s.total_exhibitions || 0, field: "exhibition_information" },
+						{ label: "总报名人数", value: s.total_registration_people || 0, field: "registration_information" },
+						{ label: "总成交额", value: this.formatMoney(s.total_revenue), field: "" },
+						{ label: "待审核报名", value: s.pending_registration || 0, field: "registration_information", query: { examine_state: "未审核" } },
+						{ label: "待审核退款", value: s.pending_refund || 0, field: "refund_request", query: { examine_state: "未审核" } },
+						{ label: "待审核行程确认", value: s.pending_travel || 0, field: "travel_confirmation", query: { examine_state: "未审核" } },
+					];
+				}
+				const stats = await this.$get("~/api/admin_dashboard/exhibition_stats");
+				this.exhibitionStats = stats && stats.result && Array.isArray(stats.result.list) ? stats.result.list : [];
+			} catch (e) {
+				this.exhibitionStats = [];
+			}
+			this.dashboardLoading = false;
+		},
+		goStat(item) {
+			if (!item || !item.field) {
+				return;
+			}
+			this.$router.push({ path: "/" + item.field + "/table", query: item.query || {} });
+		},
+		formatMoney(value) {
+			const num = Number(value || 0);
+			return "￥" + num.toFixed(2);
+		},
 		async loadRecentTracks() {
 			this.tracksLoading = true;
 			try {
 				const res = await this.$axios.get("/api/track/list");
-				this.recentTracks = Array.isArray(res) ? res.slice(0, 8) : [];
+				const rows = res && res.result && Array.isArray(res.result.list) ? res.result.list : res;
+				this.recentTracks = Array.isArray(rows) ? rows.slice(0, 8) : [];
 			} catch (e) {
 				this.recentTracks = [];
 			}

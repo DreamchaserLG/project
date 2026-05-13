@@ -1,6 +1,7 @@
 package com.project.demo.controller;
 
 import com.project.demo.entity.RegularUser;
+import com.project.demo.service.AuditLogService;
 import com.project.demo.service.RegularUserService;
 import com.alibaba.fastjson.JSON;
 import com.project.demo.entity.User;
@@ -29,12 +30,15 @@ import java.util.*;
 @RequestMapping("/regular_user")
 public class RegularUserController extends BaseController<RegularUser, RegularUserService> {
 
+    private final AuditLogService auditLogService;
+
     /**
      * 普通用户对象
      */
     @Autowired
-    public RegularUserController(RegularUserService service) {
+    public RegularUserController(RegularUserService service, AuditLogService auditLogService) {
         setService(service);
+        this.auditLogService = auditLogService;
     }
 
 
@@ -53,6 +57,8 @@ public class RegularUserController extends BaseController<RegularUser, RegularUs
                         regular_user.setUserId(paramMap.get("user_id")==null?null:Integer.valueOf(String.valueOf(paramMap.get("user_id"))));
                                                             regular_user.setCreate_by(paramMap.get("create_by")==null?null:Integer.valueOf(String.valueOf(paramMap.get("create_by"))));
         this.addEntity(regular_user);
+        auditLogService.record(request, paramMap.get("create_by") == null ? null : Integer.valueOf(String.valueOf(paramMap.get("create_by"))),
+                "新增普通用户资料", "regular_user", paramMap.get("user_id"), "成功", regular_user.getUser_name());
         System.out.println("普通用户新增成功");
         return success(1);
     }
@@ -70,8 +76,11 @@ public class RegularUserController extends BaseController<RegularUser, RegularUs
         RegularUser regular_user = new RegularUser();
             regular_user.setUser_name(paramMap.get("user_name")==null?null:String.valueOf(paramMap.get("user_name")));
                     regular_user.setUsers_mobile_phone(paramMap.get("users_mobile_phone")==null?null:String.valueOf(paramMap.get("users_mobile_phone")));
-                regular_user.setUserId(paramMap.get("user_id")==null?null:Integer.valueOf(String.valueOf(paramMap.get("user_id"))));
+        regular_user.setUserId(paramMap.get("user_id")==null?null:Integer.valueOf(String.valueOf(paramMap.get("user_id"))));
                     this.setEntity(queryMap,configMap,regular_user);
+        auditLogService.record(request, "修改个人信息", "regular_user",
+                queryMap.get("regular_user_id") == null ? queryMap.get("id") : queryMap.get("regular_user_id"),
+                "成功", regular_user.getUser_name());
         System.out.println("普通用户修改成功");
         return success(1);
     }

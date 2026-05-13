@@ -100,7 +100,7 @@
 			</el-col>
 																<el-col v-if="$check_field('get','number_of_attendees') || $check_field('add','number_of_attendees') || $check_field('set','number_of_attendees')" :xs="24" :sm="12" :lg="8" class="el_form_item_warp">
 							<el-form-item label="到场人数" prop="number_of_attendees">
-											<el-input-number id="number_of_attendees" v-model.number="form['number_of_attendees']"
+											<el-input-number id="number_of_attendees" v-model.number="form['number_of_attendees']" :min="1" :max="maxAttendees || 999999" :step="1" step-strictly
 						v-if="(form['travel_confirmation_id'] && $check_field('set','number_of_attendees')) || (!form['travel_confirmation_id'] && $check_field('add','number_of_attendees'))" :disabled="disabledObj['number_of_attendees_isDisabled']"></el-input-number>
 					<span v-else-if="$check_field('get','number_of_attendees')">{{form['number_of_attendees']}}</span>
 														</el-form-item>
@@ -162,7 +162,7 @@
 										"user_name":  '', // 用户姓名
 										"users_mobile_phone":  '', // 用户手机
 										"confirm_time":  '', // 确认时间
-										"number_of_attendees":  0, // 到场人数
+										"number_of_attendees":  1, // 到场人数
 												"travel_confirmation_id": 0, // ID
 																		"create_by": this.$store.state.user.user_id,
 				},
@@ -184,6 +184,7 @@
 														// 用户列表
 				list_user_enrolled_user: [],
 																																			
+				maxAttendees: null,
 
 													}
 		},
@@ -305,6 +306,12 @@
 							if(dbKey === "source_user_id"){
 								this.form['source_user_id'] = form[dbKey];
 							}
+							if(dbKey === "number_of_registrations"){
+								this.maxAttendees = Number(form[dbKey]) || null;
+								if(!this.form["number_of_attendees"] || this.form["number_of_attendees"] < 1){
+									this.form["number_of_attendees"] = this.maxAttendees || 1;
+								}
+							}
 						})
 					})
 				}
@@ -324,6 +331,9 @@
 			async get_obj_after(json, func){
 				if (json.result && json.result.obj) {
 					const obj = json.result.obj;
+					if (obj.source_id) {
+						this.loadRegistrationLimit(obj.source_id);
+					}
 				}
 																																																																					if(this.form["confirm_time"]=="0000-00-00 00:00:00"){
 				  this.form["confirm_time"] = null;
@@ -332,6 +342,24 @@
 					this.form["confirm_time"] = this.$toTime(parseInt(this.form["confirm_time"]),"yyyy-MM-dd hh:mm:ss")
 				}
 																
+			},
+
+			async loadRegistrationLimit(registrationId) {
+				if (!registrationId) {
+					return;
+				}
+				try {
+					const json = await this.$get("~/api/registration_information/get_obj?", {
+						registration_information_id: registrationId,
+						like: 0,
+					});
+					const obj = json && json.result && json.result.obj ? json.result.obj : null;
+					if (obj && obj.number_of_registrations) {
+						this.maxAttendees = Number(obj.number_of_registrations) || null;
+					}
+				} catch (e) {
+					this.maxAttendees = null;
+				}
 			},
 
 																																																																																		async submit(param, func){
@@ -385,6 +413,12 @@
 					
 																																																																																																															if (!param.confirm_time){
 					return "确认时间不能为空";
+				}
+				if (!param.number_of_attendees || Number(param.number_of_attendees) < 1){
+					return "行程确认人数不能小于1人";
+				}
+				if (this.maxAttendees && Number(param.number_of_attendees) > this.maxAttendees){
+					return "行程确认人数不能超过报名人数";
 				}
 																															return null;
 			},

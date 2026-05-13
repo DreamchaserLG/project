@@ -11,21 +11,21 @@
 					<el-row class="row_e">
 						<el-col :xs="24" :sm="24" :xl="8" class="el_form_item_warp">
 						<el-form-item label="原密码">
-							<el-input type="password" v-model="form.o_password" :minlength="0" :maxlength="16"
+							<el-input type="password" v-model="form.o_password" :minlength="0" :maxlength="64"
 								placeholder="请输入原密码" show-password/>
 						</el-form-item>
 					</el-col>
 
 					<el-col :xs="24" :sm="12" :xl="8" class="el_form_item_warp">
 						<el-form-item label="新密码">
-							<el-input type="password" v-model="form.password" :minlength="0" :maxlength="16"
+							<el-input type="password" v-model="form.password" :minlength="0" :maxlength="64"
 								placeholder="请输入新密码" show-password/>
 													</el-form-item>
 					</el-col>
 
 					<el-col :xs="24" :sm="12" :xl="8" class="el_form_item_warp">
 						<el-form-item label="请确认密码">
-							<el-input type="password" v-model="confirm_password" :minlength="0" :maxlength="16"
+							<el-input type="password" v-model="confirm_password" :minlength="0" :maxlength="64"
 								placeholder="请输入确认新密码" show-password/>
 						</el-form-item>
 					</el-col>
@@ -85,8 +85,8 @@
         if(!this.form.password){
           return "密码不能为空!";
         }
-								if(this.form.password.length > 16 || this.form.password.length < 6){
-          return "密码长度应为6到16个字符之间！";
+								if(this.form.password.length < 6){
+          return "密码长度不能低于6位！";
         }
 				        
 				if (this.form.password !== this.confirm_password) {

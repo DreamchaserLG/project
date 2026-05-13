@@ -19,7 +19,7 @@
 											trim></b-form-input>
 									</b-form-group>
 																		<b-form-group id="input-group-2" label="密码:" label-for="input-2"
-										:state="validation_password" invalid-feedback="密码长度为在6-16个字符"
+										:state="validation_password" invalid-feedback="密码长度不能低于6位"
 										valid-feedback="校验通过">
 										<b-form-input id="input-2" v-model="form.password" type="password"
 											placeholder="请输入密码" trim></b-form-input>
@@ -201,7 +201,7 @@
 				if (!length) {
 					return null;
 				}
-								return length >= 6 && length < 16;
+								return length >= 6;
 							},
 
 			/**

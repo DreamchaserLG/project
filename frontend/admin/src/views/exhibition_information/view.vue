@@ -34,9 +34,9 @@
 			</el-col>
 																<el-col v-if="$check_field('get','event_time') || $check_field('add','event_time') || $check_field('set','event_time')" :xs="24" :sm="12" :lg="8" class="el_form_item_warp">
 							<el-form-item label="举办时间" prop="event_time">
-															<el-input id="event_time" v-model="form['event_time']" placeholder="请输入举办时间"
+															<el-date-picker id="event_time" v-model="event_time_range" type="datetimerange" range-separator="至" start-placeholder="开始时间" end-placeholder="结束时间" value-format="yyyy-MM-dd HH:mm:ss" @change="normalizeEventTimeRange"
 							  v-if="(form['exhibition_information_id'] && $check_field('set','event_time')) || (!form['exhibition_information_id'] && $check_field('add','event_time'))" :disabled="disabledObj['event_time_isDisabled']">
-				  					</el-input>
+									</el-date-picker>
 					<div v-else-if="$check_field('get','event_time')">
 						{{form['event_time']}}
 				  					</div>
@@ -191,6 +191,7 @@
 		data() {
 			return {
 				field: "exhibition_information_id",
+				event_time_range: [],
 				url_add: "~/api/exhibition_information/add?",
 				url_set: "~/api/exhibition_information/set?",
 				url_get_obj: "~/api/exhibition_information/get_obj?",
@@ -417,6 +418,7 @@
 			async get_obj_after(json, func){
 				if (json.result && json.result.obj) {
 					const obj = json.result.obj;
+					this.event_time_range = this.parseEventTimeRange(obj.event_time);
 				}
 																																																																								if (this.form["introduction_document"]) {
 					this.introduction_document_FileList = []
@@ -428,6 +430,11 @@
 					];
 				}
 																					
+			},
+
+			submit_before(param){
+				param.event_time = this.formatEventTimeRange();
+				return param;
 			},
 
 																																																																																									async submit(param, func){
@@ -478,8 +485,48 @@
 			 * @return {String} 验证成功返回null, 失败返回错误提示
 			 */
 						async submit_check(param) {
+				if (!this.event_time_range || this.event_time_range.length !== 2) {
+					return "请选择会展开始时间和结束时间";
+				}
+				const start = new Date(this.event_time_range[0]).getTime();
+				const end = new Date(this.event_time_range[1]).getTime();
+				if (!start || !end || end - start < 3 * 60 * 60 * 1000) {
+					return "结束时间必须至少晚于开始时间3小时";
+				}
 					
 																																																																																																																																																															return null;
+			},
+
+			formatEventTimeRange() {
+				if (!this.event_time_range || this.event_time_range.length !== 2) {
+					return "";
+				}
+				return this.event_time_range[0] + " 至 " + this.event_time_range[1];
+			},
+			parseEventTimeRange(value) {
+				if (!value) {
+					return [];
+				}
+				const matches = String(value).match(/\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2})?/g);
+				if (!matches || matches.length < 2) {
+					return [];
+				}
+				return matches.slice(0, 2).map((item) => item.length === 16 ? item + ":00" : item.replace("T", " "));
+			},
+			normalizeEventTimeRange(value) {
+				if (!value || value.length !== 2) {
+					return;
+				}
+				const start = new Date(value[0]).getTime();
+				const end = new Date(value[1]).getTime();
+				if (start && end && end - start < 3 * 60 * 60 * 1000) {
+					this.$set(this.event_time_range, 1, this.formatDateTime(new Date(start + 3 * 60 * 60 * 1000)));
+					this.$message.warning("结束时间已自动调整为开始时间3小时后");
+				}
+			},
+			formatDateTime(date) {
+				const pad = (n) => String(n).padStart(2, "0");
+				return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 			},
 
 			is_view(){

@@ -128,6 +128,8 @@
           msg = "邮箱不能为空!"
         } else if (email && !email_regular.test(email)) {
           msg = "邮箱格式不正确 例：test@test.com";
+        } else if (!password || password.length < 6) {
+          msg = "密码长度不能低于6位。";
         }
               else if (password !== this.confirm_password) {
           msg = "密码和确认密码不一致。";

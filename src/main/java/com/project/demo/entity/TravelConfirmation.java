@@ -55,6 +55,14 @@ public class TravelConfirmation implements Serializable {
     @TableField(value = "`number_of_attendees`")
     private Double number_of_attendees;
 
+    // 审核状态
+    @TableField(value = "examine_state")
+    private String examine_state;
+
+    // 审核回复
+    @TableField(value = "examine_reply")
+    private String examine_reply;
+
 
 
 

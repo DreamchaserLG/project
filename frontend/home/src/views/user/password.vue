@@ -17,13 +17,13 @@
 							<!-- 密码修改 -->
 							<b-form class="card_pass_form">
 								<b-form-group id="input-group-2" label="输入原始密码:" label-for="input-2"
-									:state="validation_o_password" invalid-feedback="密码长度为在6-16个字符"
+									:state="validation_o_password" invalid-feedback="密码长度不能低于6位"
 									valid-feedback="校验通过">
 									<b-form-input id="input-2" v-model="form.o_password" type="password"
 										placeholder="原始密码" trim></b-form-input>
 								</b-form-group>
 																<b-form-group id="input-group-2" label="设置新密码:" label-for="input-2"
-									:state="validation_password" invalid-feedback="密码长度为在6-16个字符" valid-feedback="校验通过">
+									:state="validation_password" invalid-feedback="密码长度不能低于6位" valid-feedback="校验通过">
 									<b-form-input id="input-2" v-model="form.password" type="password"
 										placeholder="设置新密码" trim></b-form-input>
 								</b-form-group>
@@ -92,7 +92,7 @@
 				if (!length) {
 					return null;
 				}
-				return length >= 6 && length < 16;
+				return length >= 6;
 			},
 			/**
 			 * 验证密码
@@ -102,7 +102,7 @@
 				if (!length) {
 					return null;
 				}
-							return length >= 6 && length < 16;
+							return length >= 6;
 						},
 			/**
 			 * 再次验证密码
@@ -116,8 +116,8 @@
 				if(!this.form.password){
 					return "密码不能为空!";
 				}
-								if(this.form.password.length > 16 || this.form.password.length < 6){
-					return "密码长度应为6到16个字符之间！";
+								if(this.form.password.length < 6){
+					return "密码长度不能低于6位！";
 				}
 								if (this.form.password !== this.confirm_password) {
 					return "密码和确认密码不一致！"

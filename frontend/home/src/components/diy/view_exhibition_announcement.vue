@@ -53,12 +53,9 @@
 						</el-select>
 																			</el-form-item>
 			</el-col>
-																<el-col v-if="$check_field('get','release_time') || $check_field('add','release_time') || $check_field('set','release_time')" :xs="24" :sm="12" :lg="8" class="el_form_item_warp">
+																<el-col v-if="$check_field('get','release_time') && form['release_time']" :xs="24" :sm="12" :lg="8" class="el_form_item_warp">
 				<el-form-item label="发布时间" prop="release_time">
-								<el-date-picker :disabled="disabledObj['release_time_isDisabled']" v-if="(form['exhibition_announcement_id'] && $check_field('set','release_time')) || (!form['exhibition_announcement_id'] && $check_field('add','release_time'))" id="release_time"
-						v-model="form['release_time']" type="datetime" placeholder="选择日期时间">
-					</el-date-picker>
-					<div v-else-if="$check_field('get','release_time')">{{form['release_time']}}</div>
+					<div>{{form['release_time']}}</div>
 										</el-form-item>
 			</el-col>
 																<el-col v-if="$check_field('get','announcement_image') || $check_field('add','announcement_image') || $check_field('set','announcement_image')" :xs="24" :sm="12" :lg="8" class="el_form_item_warp">
@@ -481,9 +478,6 @@
 			 * @return {String} 验证成功返回null, 失败返回错误提示
 			 */
 			async submit_check(param) {
-																																																												if (!param.release_time){
-					return "发布时间不能为空";
-				}
 																																																						var announcement_content_SensitiveWords = await this.filterSensitiveWords(param.announcement_content)
 			if(announcement_content_SensitiveWords.length > 0){
 				return '公告内容中包含敏感词: ' + announcement_content_SensitiveWords.join(',')

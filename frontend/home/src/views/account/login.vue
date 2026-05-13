@@ -49,7 +49,7 @@
             label="密码"
             label-for="login-password"
             :state="validation_password"
-            invalid-feedback="密码长度应为 6 到 16 个字符"
+            invalid-feedback="密码长度不能低于6位"
           >
             <div class="auth_password_field">
               <b-form-input
@@ -125,7 +125,7 @@ export default {
       if (!length) {
         return null;
       }
-      return length >= 6 && length < 16;
+      return length >= 6;
     },
   },
   methods: {

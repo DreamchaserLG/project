@@ -127,7 +127,7 @@
 			</el-col>
 																<el-col v-if="$check_field('get','number_of_registrations') || $check_field('add','number_of_registrations') || $check_field('set','number_of_registrations')" :xs="24" :sm="12" :lg="8" class="el_form_item_warp">
 				<el-form-item label="报名人数" prop="number_of_registrations">
-								<el-input-number id="number_of_registrations" v-model.number="form['number_of_registrations']"
+								<el-input-number id="number_of_registrations" v-model.number="form['number_of_registrations']" :min="1" :step="1" step-strictly
 						v-if="(form['registration_information_id'] && $check_field('set','number_of_registrations')) || (!form['registration_information_id'] && $check_field('add','number_of_registrations'))" :disabled="disabledObj['number_of_registrations_isDisabled']"></el-input-number>
 					<span v-else-if="$check_field('get','number_of_registrations')">{{form['number_of_registrations']}}</span>
 														</el-form-item>
@@ -290,7 +290,7 @@
 										"enrolled_user": 0, // 报名用户
 										"user_name":  '', // 用户姓名
 										"users_mobile_phone":  '', // 用户手机
-										"number_of_registrations":  0, // 报名人数
+										"number_of_registrations":  1, // 报名人数
 										"enterprise_qualifications":  '', // 企业资质
 										"registration_notes":  '', // 报名备注
 										"site_plan":  '', // 场地平面图

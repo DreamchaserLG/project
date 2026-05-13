@@ -3,9 +3,11 @@ package com.project.demo.controller.base;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.project.demo.service.AuditLogService;
 import com.project.demo.service.base.BaseService;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,11 +36,15 @@ public class BaseController<E, S extends BaseService<E>> {
     @Setter
     protected S service;
 
+    @Autowired(required = false)
+    protected AuditLogService auditLogService;
+
 
     @PostMapping("/add")
     @Transactional
     public Map<String, Object> add(HttpServletRequest request) throws IOException {
         service.insert(service.readBody(request.getReader()));
+        recordAudit(request, "新增", "成功", "");
         return success(1);
     }
 
@@ -58,6 +64,7 @@ public class BaseController<E, S extends BaseService<E>> {
 	@Transactional
     public Map<String, Object> set(HttpServletRequest request) throws IOException {
         service.update(service.readQuery(request), service.readConfig(request), service.readBody(request.getReader()));
+        recordAudit(request, "修改", "成功", "");
         return success(1);
     }
 
@@ -70,7 +77,9 @@ public class BaseController<E, S extends BaseService<E>> {
     @RequestMapping(value = "/del")
     @Transactional
     public Map<String, Object> del(HttpServletRequest request) {
+        Map<String, String> query = service.readQuery(request);
         service.delete(service.readQuery(request), service.readConfig(request));
+        recordAudit(request, "删除", "成功", query.toString());
         return success(1);
     }
 
@@ -211,6 +220,48 @@ public class BaseController<E, S extends BaseService<E>> {
             put("message", message);
         }});
         return map;
+    }
+
+    protected void recordAudit(HttpServletRequest request, String action, String result, String remark) {
+        if (auditLogService == null || request == null) {
+            return;
+        }
+        String objectType = resolveObjectType(request);
+        String objectId = resolveObjectId(request);
+        String actionType = action;
+        if ("auth".equals(objectType)) {
+            actionType = "权限" + action;
+        }
+        auditLogService.record(request, actionType, objectType, objectId, result, remark);
+    }
+
+    private String resolveObjectType(HttpServletRequest request) {
+        String uri = request.getRequestURI();
+        if (uri == null || uri.trim().isEmpty()) {
+            return "";
+        }
+        String path = uri;
+        int apiIndex = path.indexOf("/api/");
+        if (apiIndex >= 0) {
+            path = path.substring(apiIndex + 5);
+        } else if (path.startsWith("/")) {
+            path = path.substring(1);
+        }
+        int slashIndex = path.indexOf("/");
+        return slashIndex >= 0 ? path.substring(0, slashIndex) : path;
+    }
+
+    private String resolveObjectId(HttpServletRequest request) {
+        Map<String, String> query = service.readQuery(request);
+        if (query == null || query.isEmpty()) {
+            return "";
+        }
+        for (Map.Entry<String, String> entry : query.entrySet()) {
+            if (entry.getKey() != null && (entry.getKey().endsWith("_id") || "id".equals(entry.getKey()))) {
+                return entry.getValue();
+            }
+        }
+        return query.toString();
     }
 
     public Timestamp parseToTimestamp(String timeStr) {

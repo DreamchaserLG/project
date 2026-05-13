@@ -245,10 +245,10 @@
           <span>详情</span>
         </router-link>
         <!--跨表按钮-->
-        <el-button class="el-button el-button--small is-plain el-button--default" style="margin: 5px !important;" size="small"  @click="openTravelConfirmation(scope.row)" v-if="($check_action('/travel_confirmation/table','add') || $check_action('/travel_confirmation/view','add') || $check_action('/travel_confirmation/view','get')) && canOpenTravel(scope.row)">
+        <el-button class="el-button el-button--small is-plain el-button--primary" style="margin: 5px !important;" size="small"  @click="openTravelConfirmation(scope.row)">
 					  <span>{{ scope.row.travel_confirmation_id ? '行程信息' : '行程确认' }}</span>
 					</el-button>
-        <el-button class="el-button el-button--small is-plain el-button--default" style="margin: 5px !important;" size="small"  @click="openRefundRequest(scope.row)" v-if="($check_action('/refund_request/table','add') || $check_action('/refund_request/view','add') || $check_action('/refund_request/view','get')) && canOpenRefund(scope.row)">
+        <el-button class="el-button el-button--small is-plain el-button--warning" style="margin: 5px !important;" size="small"  @click="openRefundRequest(scope.row)">
 					  <span>退款处理</span>
 					</el-button>
 					                                                                              <el-button class="el-button el-button--small is-plain el-button--default" style="margin: 5px !important;" size="small" @click="openPayModal(scope.row)" v-if="($check_pay('/registration_information/table')) && canPay(scope.row)">
@@ -334,11 +334,11 @@
               <div class="pay_ebank" v-if="pay_obj.payActiveName == '网银支付'">
                 <div class="pay_ebank_item">
                   <div class="pay_ebank_title">请输入网银账号：</div>
-                  <el-input class="pay_ebank_input" v-model="pay_obj.account" placeholder="请输入网银账号"></el-input>
+                  <el-input class="pay_ebank_input" v-model="pay_obj.account" maxlength="19" placeholder="请输入网银账号" @input="pay_obj.account = String(pay_obj.account || '').replace(/\D/g, '').slice(0, 19)"></el-input>
                 </div>
                 <div class="pay_ebank_item">
-                  <div class="pay_ebank_title">请输入支付密码，6位数字：</div>
-                  <el-input class="pay_ebank_input" placeholder="请输入密码" v-model="pay_obj.password" show-password maxlength="6"></el-input>
+                  <div class="pay_ebank_title">请输入支付密码：</div>
+                  <el-input class="pay_ebank_input" placeholder="请输入密码" v-model="pay_obj.password" show-password maxlength="32"></el-input>
                 </div>
               </div>
             </div>
@@ -520,9 +520,56 @@
         }
         return this.canRefund(row);
       },
+      travelUnavailableMessage(row) {
+        if (!row) {
+          return "报名记录不存在";
+        }
+        if (this.normalizeRegistrationStatus(row) === "已取消") {
+          return "已取消的报名不能进行行程确认";
+        }
+        if (this.normalizeRegistrationStatus(row) !== "已报名") {
+          return "当前报名状态不能进行行程确认";
+        }
+        if (row.examine_state !== "已通过") {
+          return "报名审核通过后才能进行行程确认";
+        }
+        if (row.travel_confirmation_limit || row.travel_confirmation_status_limit) {
+          return "当前报名记录的行程确认次数已达上限";
+        }
+        return "";
+      },
+      refundUnavailableMessage(row) {
+        if (!row) {
+          return "报名记录不存在";
+        }
+        if (row.refund_request_id) {
+          return "";
+        }
+        if (this.normalizeRegistrationStatus(row) === "已取消") {
+          return "已取消的报名不能申请退款";
+        }
+        if (this.normalizeRegistrationStatus(row) !== "已报名") {
+          return "当前报名状态不能申请退款";
+        }
+        if (row.examine_state !== "已通过") {
+          return "报名审核通过后才能申请退款";
+        }
+        if (row.pay_state !== "已支付") {
+          return "支付成功后才能申请退款";
+        }
+        if (row.refund_request_limit || row.refund_request_status_limit) {
+          return "当前报名记录已有退款申请或退款次数已达上限";
+        }
+        return "";
+      },
       openTravelConfirmation(row) {
         if (row.travel_confirmation_id) {
           this.$router.push("/travel_confirmation/view?travel_confirmation_id=" + row.travel_confirmation_id);
+          return;
+        }
+        var message = this.travelUnavailableMessage(row);
+        if (message) {
+          this.$toast(message, "warning");
           return;
         }
         this.startRelatedForm(row, "/travel_confirmation/view");
@@ -530,6 +577,11 @@
       openRefundRequest(row) {
         if (row.refund_request_id) {
           this.$router.push("/refund_request/view?refund_request_id=" + row.refund_request_id);
+          return;
+        }
+        var message = this.refundUnavailableMessage(row);
+        if (message) {
+          this.$toast(message, "warning");
           return;
         }
         this.startRelatedForm(row, "/refund_request/view");
@@ -827,10 +879,24 @@
             this.payModalVisible = true
           },
           confirmPayStep() {
+            if (this.pay_obj.payActiveName === "网银支付" && !this.validateBankPay()) {
+              return;
+            }
             if (this.pay_obj.payActiveName == "微信支付" || this.pay_obj.payActiveName == "支付宝支付" || this.pay_obj.payActiveName == "网银支付") {
               this.pay_step = 2
             }
                 },
+          validateBankPay() {
+            if (!/^\d{16}$|^\d{17}$|^\d{19}$/.test(String(this.pay_obj.account || ""))) {
+              this.$toast("银行卡号必须为16、17或19位纯数字", "danger");
+              return false;
+            }
+            if (!this.pay_obj.password || this.pay_obj.password.length < 6) {
+              this.$toast("支付密码不能低于6位", "danger");
+              return false;
+            }
+            return true;
+          },
           submitPay(){
                           let message_inform1 = {
                 title: '用户支付订单成功',
@@ -840,20 +906,15 @@
                 user_id: '9999'
               }
                         let _this = this;
-			if(_this.pay_obj.payActiveName == "网银"){
-				if(_this.pay_obj.account == ""){
-					_this.$toast("请输入网银账号", 'danger');
-					return false
-				}
-				if(_this.pay_obj.password.length < 6){
-					_this.$toast("请输入6位数的支付密码", 'danger');
+			if(_this.pay_obj.payActiveName == "网银支付"){
+				if(!this.validateBankPay()){
 					return false
 				}
 			}
             let url = this.$toUrl(this.query, "~/api/registration_information/set?registration_information_id="+this.pay_obj.id);
             let name = this.pay_obj.payActiveName;
             let payType = name.endsWith("支付") ? name.slice(0, -2) : name;
-            let param = {"pay_state":"已支付","pay_type":payType}
+            let param = {"pay_state":"已支付","pay_type":payType,"bank_account":this.pay_obj.account,"bank_password":this.pay_obj.password}
                                                                                                                                                                                                                                                   this.$post(url, param, function(json, status) {
               console.log("提交结果：" ,json);
               if (json.result) {
