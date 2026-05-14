@@ -129,9 +129,4 @@ export default {
   line-height: 1.55;
 }
 
-@media (max-width: 1100px) {
-  .profile_menu_list {
-    grid-template-columns: 1fr;
-  }
-}
 </style>

@@ -488,6 +488,7 @@ export default {
 .profile_page {
   display: grid;
   gap: 1.2rem;
+  min-width: 1180px;
 }
 
 .profile_hero {
@@ -637,7 +638,7 @@ export default {
 
 .profile_grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(340px, 0.95fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.2rem;
   align-items: stretch;
 }
@@ -769,22 +770,6 @@ export default {
   font-size: 12px;
 }
 
-@media (max-width: 900px) {
-  .profile_summary,
-  .profile_grid,
-  .profile_records {
-    grid-template-columns: 1fr;
-  }
-
-  .profile_summary_left {
-    grid-template-columns: 1fr;
-  }
-
-  .profile_actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 760px) {
   .profile_hero {
     min-height: 220px;
@@ -799,12 +784,6 @@ export default {
   .profile_record_item {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .profile_metrics,
-  .profile_info_rows,
-  .profile_actions {
-    grid-template-columns: 1fr;
   }
 
   .profile_record_side {
