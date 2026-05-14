@@ -779,11 +779,23 @@
 				}
 			},
 
+			formatUserDisplay(obj){
+				if (!obj) {
+					return "";
+				}
+				const nickname = String(obj.nickname || "").trim();
+				const username = String(obj.username || "").trim();
+				if (nickname && username && nickname !== username) {
+					return nickname + "-" + username;
+				}
+				return nickname || username;
+			},
+
 			get_user_host_user(id){
 				var obj = this.list_user_host_user.getObj({"user_id":id});
 				var ret = "";
 				if(obj){
-					ret = obj.nickname+"-"+obj.username;
+					ret = this.formatUserDisplay(obj);
 					// if(obj.nickname){
 					// 	ret = obj.nickname;
 					// }
@@ -810,7 +822,7 @@
 				var obj = this.list_user_enrolled_user.getObj({"user_id":id});
 				var ret = "";
 				if(obj){
-					ret = obj.nickname+"-"+obj.username;
+					ret = this.formatUserDisplay(obj);
 					// if(obj.nickname){
 					// 	ret = obj.nickname;
 					// }

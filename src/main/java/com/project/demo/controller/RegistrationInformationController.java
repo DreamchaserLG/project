@@ -485,7 +485,7 @@ public class RegistrationInformationController extends BaseController<Registrati
 
         List<Map<String, Object>> rows = service.selectMapBaseList(
                 "SELECT registration_information_id FROM registration_information " +
-                        "WHERE order_number = '" + orderNumber + "' ORDER BY registration_information_id DESC LIMIT 1"
+                        "WHERE IFNULL(is_deleted, 0) = 0 AND order_number = '" + orderNumber + "' ORDER BY registration_information_id DESC LIMIT 1"
         );
 
         if (rows == null || rows.isEmpty()) {

@@ -225,10 +225,25 @@ public class BaseService<E>{
 
     @Transactional
     public void delete(Map<String,String> query,Map<String,String> config){
+        if (useLogicalDelete(table)) {
+            String whereSql = toWhereSql(query, "0".equals(config.get(FindConfig.GROUP_BY)), config.get(FindConfig.SQLHWERE));
+            baseMapper.updateBaseSql("UPDATE `" + table + "` SET is_deleted = 1, deleted_time = NOW(), update_time = NOW() " + whereSql);
+            log.info("[{}] - 逻辑删除操作：{}", table, whereSql);
+            return;
+        }
         QueryWrapper wrapper = new QueryWrapper<E>();
         toWhereWrapper(query, "0".equals(config.get(FindConfig.GROUP_BY)),wrapper);
         baseMapper.delete(wrapper);
         log.info("[{}] - 删除操作：{}",wrapper.getSqlSelect());
+    }
+
+    private boolean useLogicalDelete(String tableName) {
+        return "registration_information".equals(tableName)
+                || "travel_confirmation".equals(tableName)
+                || "refund_request".equals(tableName)
+                || "exhibition_information".equals(tableName)
+                || "booth_information".equals(tableName)
+                || "data_statistics".equals(tableName);
     }
 
 //    public void count(Map<String,String> query,Map<String,String> config, QueryWrapper wrapper){

@@ -45,12 +45,12 @@
 																<el-col v-if="$check_field('get','host_user') || $check_field('add','host_user') || $check_field('set','host_user')" :xs="24" :sm="12" :lg="8" class="el_form_item_warp">
 				<el-form-item label="主办用户" prop="host_user">
 													<el-select v-if="(form['registration_information_id'] && $check_field('set','host_user')) || (!form['registration_information_id'] && $check_field('add','host_user'))" id="host_user" v-model="form['host_user']" :disabled="disabledObj['host_user_isDisabled']">
-							<el-option v-for="o in list_user_host_user" :key="o['username']" :label="o['nickname'] + '-' + o['username']"
+							<el-option v-for="o in list_user_host_user" :key="o['username']" :label="formatUserDisplay(o)"
 									   :value="o['user_id']">
 							</el-option>
 						</el-select>
 						<el-select v-else-if="$check_field('get','host_user')" id="host_user" v-model="form['host_user']" :disabled="true">
-							<el-option v-for="o in list_user_host_user" :key="o['username']" :label="o['nickname'] + '-' + o['username']"
+							<el-option v-for="o in list_user_host_user" :key="o['username']" :label="formatUserDisplay(o)"
 									   :value="o['user_id']">
 							</el-option>
 						</el-select>
@@ -88,18 +88,18 @@
 																		<div v-if="user_group !== '管理员'">
 							{{ get_user_session_enrolled_user(form['enrolled_user']) }}
 							<el-select v-if="(form['registration_information_id'] && $check_field('set','enrolled_user')) || (!form['registration_information_id'] && $check_field('add','enrolled_user'))" id="enrolled_user" v-model="form['enrolled_user']" :disabled="disabledObj['enrolled_user_isDisabled']">
-								<el-option v-for="o in list_user_enrolled_user" :key="o['username']" :label="o['nickname'] + '-' + o['username']"
+								<el-option v-for="o in list_user_enrolled_user" :key="o['username']" :label="formatUserDisplay(o)"
 										   :value="o['user_id']">
 								</el-option>
 							</el-select>
 							<el-select v-else-if="$check_field('get','enrolled_user')" id="enrolled_user" v-model="form['enrolled_user']" :disabled="true">
-								<el-option v-for="o in list_user_enrolled_user" :key="o['username']" :label="o['nickname'] + '-' + o['username']"
+								<el-option v-for="o in list_user_enrolled_user" :key="o['username']" :label="formatUserDisplay(o)"
 										   :value="o['user_id']">
 								</el-option>
 							</el-select>
 						</div>
 						<el-select v-else id="enrolled_user" v-model="form['enrolled_user']" :disabled="disabledObj['enrolled_user_isDisabled']">
-							<el-option v-for="o in list_user_enrolled_user" :key="o['username']" :label="o['nickname'] + '-' + o['username']"
+							<el-option v-for="o in list_user_enrolled_user" :key="o['username']" :label="formatUserDisplay(o)"
 									   :value="o['user_id']">
 							</el-option>
 						</el-select>
@@ -366,15 +366,22 @@
                     console.error(json.error);
                 }
 			},
+			formatUserDisplay(obj){
+				if (!obj) {
+					return "";
+				}
+				const nickname = String(obj.nickname || "").trim();
+				const username = String(obj.username || "").trim();
+				if (nickname && username && nickname !== username) {
+					return nickname + "-" + username;
+				}
+				return nickname || username;
+			},
 					get_user_host_user(id){
 				var obj = this.list_user_host_user.getObj({"user_id":id});
 				var ret = "";
 				if(obj){
-					if(obj.nickname){
-						ret = obj.nickname;}
-					else{
-						ret = obj.username;
-					}
+					ret = this.formatUserDisplay(obj);
 				}
 				return ret;
 			},
@@ -449,11 +456,7 @@
 				var obj = this.list_user_enrolled_user.getObj({"user_id":id});
 				var ret = "";
 				if(obj){
-					if(obj.nickname){
-						ret = obj.nickname;}
-					else{
-						ret = obj.username;
-					}
+					ret = this.formatUserDisplay(obj);
 				}
 				return ret;
 			},

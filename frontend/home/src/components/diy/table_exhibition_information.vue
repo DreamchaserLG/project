@@ -66,7 +66,7 @@
                                               <el-table-column prop="event_time" @sort-change="$sortChange" label="举办时间"                                v-if="$check_field('get','event_time')" min-width="200">
                   {
                     <template slot-scope="scope">
-                                          {{ scope.row['event_time'] }}
+                                          {{ formatEventTime(scope.row['event_time']) }}
                                                             </template>
                   }
                                 </el-table-column>
@@ -204,6 +204,7 @@
 </template>
 <script>
   import mixin from "@/mixins/page.js";
+  import { formatEventTimeForDisplay } from "@/utils/eventTime";
                                         export default {
     mixins: [mixin],
     components: {
@@ -253,6 +254,9 @@
       }
     },
     methods: {
+      formatEventTime(value) {
+        return formatEventTimeForDisplay(value, "minute");
+      },
     	    	                        // 关闭弹框
       closeModal(){
         this.showModal = false;

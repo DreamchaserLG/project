@@ -38,7 +38,7 @@
 							v-if="(form['exhibition_information_id'] && $check_field('set','event_time')) || (!form['exhibition_information_id'] && $check_field('add','event_time'))" :disabled="disabledObj['event_time_isDisabled']">
 									</el-date-picker>
 					<div v-else-if="$check_field('get','event_time')">
-						{{form['event_time']}}
+						{{formatEventTime(form['event_time'])}}
 									</div>
 														</el-form-item>
 			</el-col>
@@ -183,6 +183,12 @@
 
 <script>
 	import mixin from "@/mixins/page.js";
+	import {
+		formatEventDateTime,
+		formatEventTimeRange as buildEventTimeRange,
+		parseEventDateTime,
+		parseEventTimeRange as readEventTimeRange,
+	} from "@/utils/eventTime";
 											                      											
 	export default {
 		mixins: [mixin],
@@ -486,9 +492,9 @@
 				if (!this.event_time_range || this.event_time_range.length !== 2) {
 					return "请选择会展开始时间和结束时间";
 				}
-				const start = new Date(this.event_time_range[0]).getTime();
-				const end = new Date(this.event_time_range[1]).getTime();
-				if (!start || !end || end - start < 3 * 60 * 60 * 1000) {
+				const start = parseEventDateTime(this.event_time_range[0]);
+				const end = parseEventDateTime(this.event_time_range[1]);
+				if (!start || !end || end.getTime() - start.getTime() < 3 * 60 * 60 * 1000) {
 					return "结束时间必须至少晚于开始时间3小时";
 				}
 																																																																																																																																						var fee_standards_SensitiveWords = await this.filterSensitiveWords(param.fee_standards)
@@ -503,35 +509,27 @@
 			},
 
 			formatEventTimeRange() {
-				if (!this.event_time_range || this.event_time_range.length !== 2) {
-					return "";
-				}
-				return this.event_time_range[0] + " 至 " + this.event_time_range[1];
+				return buildEventTimeRange(this.event_time_range);
+			},
+			formatEventTime(value) {
+				return buildEventTimeRange(readEventTimeRange(value), false) || value || "";
 			},
 			parseEventTimeRange(value) {
-				if (!value) {
-					return [];
-				}
-				const matches = String(value).match(/\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2})?/g);
-				if (!matches || matches.length < 2) {
-					return [];
-				}
-				return matches.slice(0, 2).map((item) => item.length === 16 ? item + ":00" : item.replace("T", " "));
+				return readEventTimeRange(value);
 			},
 			normalizeEventTimeRange(value) {
 				if (!value || value.length !== 2) {
 					return;
 				}
-				const start = new Date(value[0]).getTime();
-				const end = new Date(value[1]).getTime();
-				if (start && end && end - start < 3 * 60 * 60 * 1000) {
-					this.$set(this.event_time_range, 1, this.formatDateTime(new Date(start + 3 * 60 * 60 * 1000)));
+				const start = parseEventDateTime(value[0]);
+				const end = parseEventDateTime(value[1]);
+				if (start && end && end.getTime() - start.getTime() < 3 * 60 * 60 * 1000) {
+					this.$set(this.event_time_range, 1, this.formatDateTime(new Date(start.getTime() + 3 * 60 * 60 * 1000)));
 					this.$message.warning("结束时间已自动调整为开始时间3小时后");
 				}
 			},
 			formatDateTime(date) {
-				const pad = (n) => String(n).padStart(2, "0");
-				return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+				return formatEventDateTime(date);
 			},
 
 			is_view(){

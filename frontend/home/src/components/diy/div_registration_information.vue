@@ -272,6 +272,17 @@
 					console.error(json.error);
 				}
 			},
+			formatUserDisplay(obj){
+				if (!obj) {
+					return "";
+				}
+				const nickname = String(obj.nickname || "").trim();
+				const username = String(obj.username || "").trim();
+				if (nickname && username && nickname !== username) {
+					return nickname + "-" + username;
+				}
+				return nickname || username;
+			},
 											get_user_info(name,id){
 				var obj = null;
 									if (name == 'host_user'){
@@ -280,9 +291,9 @@
 									if (name == 'enrolled_user'){
 					obj = this.list_user_enrolled_user.getObj({"user_id":id});
 				}
-												var ret = "";
+				var ret = "";
 				if(obj){
-					ret = obj.nickname+"-"+obj.username;
+					ret = this.formatUserDisplay(obj);
 					// if(obj.nickname){
 					// 	ret = obj.nickname;
 					// }

@@ -245,7 +245,7 @@ public class TravelConfirmationController extends BaseController<TravelConfirmat
             return null;
         }
         java.util.List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT registration_information_id FROM registration_information WHERE order_number = ? ORDER BY registration_information_id DESC LIMIT 1",
+                "SELECT registration_information_id FROM registration_information WHERE IFNULL(is_deleted, 0) = 0 AND order_number = ? ORDER BY registration_information_id DESC LIMIT 1",
                 orderNumber
         );
         return rows.isEmpty() ? null : intValue(rows.get(0).get("registration_information_id"));
@@ -276,7 +276,7 @@ public class TravelConfirmationController extends BaseController<TravelConfirmat
             return null;
         }
         java.util.List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT source_id FROM travel_confirmation WHERE travel_confirmation_id = ? LIMIT 1",
+                "SELECT source_id FROM travel_confirmation WHERE IFNULL(is_deleted, 0) = 0 AND travel_confirmation_id = ? LIMIT 1",
                 travelConfirmationId);
         return rows.isEmpty() ? null : intValue(rows.get(0).get("source_id"));
     }

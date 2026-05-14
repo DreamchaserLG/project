@@ -68,6 +68,9 @@ CALL add_column_if_missing('registration_information', 'confirm_time', 'datetime
 CALL add_column_if_missing('registration_information', 'cancel_time', 'datetime DEFAULT NULL COMMENT ''取消时间''');
 CALL add_column_if_missing('registration_information', 'escalate_state', 'varchar(16) DEFAULT '''' COMMENT ''越级状态''');
 CALL add_column_if_missing('registration_information', 'escalate_reason', 'varchar(500) DEFAULT '''' COMMENT ''越级原因''');
+CALL add_column_if_missing('registration_information', 'is_deleted', 'tinyint(1) NOT NULL DEFAULT 0 COMMENT ''逻辑删除''');
+CALL add_column_if_missing('registration_information', 'deleted_time', 'datetime DEFAULT NULL COMMENT ''逻辑删除时间''');
+CALL add_column_if_missing('registration_information', 'deleted_reason', 'varchar(500) DEFAULT '''' COMMENT ''逻辑删除原因''');
 
 CALL add_column_if_missing('refund_request', 'extra', 'text COMMENT ''额外信息''');
 CALL add_column_if_missing('refund_request', 'source_table', 'varchar(255) DEFAULT NULL COMMENT ''来源表''');
@@ -75,6 +78,9 @@ CALL add_column_if_missing('refund_request', 'source_id', 'int DEFAULT 0 COMMENT
 CALL add_column_if_missing('refund_request', 'source_user_id', 'int DEFAULT 0 COMMENT ''来源用户''');
 CALL add_column_if_missing('refund_request', 'escalate_state', 'varchar(16) DEFAULT '''' COMMENT ''申诉状态''');
 CALL add_column_if_missing('refund_request', 'escalate_reason', 'varchar(500) DEFAULT '''' COMMENT ''申诉原因''');
+CALL add_column_if_missing('refund_request', 'is_deleted', 'tinyint(1) NOT NULL DEFAULT 0 COMMENT ''逻辑删除''');
+CALL add_column_if_missing('refund_request', 'deleted_time', 'datetime DEFAULT NULL COMMENT ''逻辑删除时间''');
+CALL add_column_if_missing('refund_request', 'deleted_reason', 'varchar(500) DEFAULT '''' COMMENT ''逻辑删除原因''');
 
 CALL add_column_if_missing('travel_confirmation', 'extra', 'text COMMENT ''额外信息''');
 CALL add_column_if_missing('travel_confirmation', 'source_table', 'varchar(255) DEFAULT NULL COMMENT ''来源表''');
@@ -82,6 +88,19 @@ CALL add_column_if_missing('travel_confirmation', 'source_id', 'int DEFAULT 0 CO
 CALL add_column_if_missing('travel_confirmation', 'source_user_id', 'int DEFAULT 0 COMMENT ''来源用户''');
 CALL add_column_if_missing('travel_confirmation', 'examine_state', 'varchar(16) DEFAULT ''未审核'' NOT NULL COMMENT ''审核状态''');
 CALL add_column_if_missing('travel_confirmation', 'examine_reply', 'varchar(255) DEFAULT '''' COMMENT ''审核回复''');
+CALL add_column_if_missing('travel_confirmation', 'is_deleted', 'tinyint(1) NOT NULL DEFAULT 0 COMMENT ''逻辑删除''');
+CALL add_column_if_missing('travel_confirmation', 'deleted_time', 'datetime DEFAULT NULL COMMENT ''逻辑删除时间''');
+CALL add_column_if_missing('travel_confirmation', 'deleted_reason', 'varchar(500) DEFAULT '''' COMMENT ''逻辑删除原因''');
+
+CALL add_column_if_missing('exhibition_information', 'is_deleted', 'tinyint(1) NOT NULL DEFAULT 0 COMMENT ''逻辑删除''');
+CALL add_column_if_missing('exhibition_information', 'deleted_time', 'datetime DEFAULT NULL COMMENT ''逻辑删除时间''');
+CALL add_column_if_missing('exhibition_information', 'deleted_reason', 'varchar(500) DEFAULT '''' COMMENT ''逻辑删除原因''');
+CALL add_column_if_missing('booth_information', 'is_deleted', 'tinyint(1) NOT NULL DEFAULT 0 COMMENT ''逻辑删除''');
+CALL add_column_if_missing('booth_information', 'deleted_time', 'datetime DEFAULT NULL COMMENT ''逻辑删除时间''');
+CALL add_column_if_missing('booth_information', 'deleted_reason', 'varchar(500) DEFAULT '''' COMMENT ''逻辑删除原因''');
+CALL add_column_if_missing('data_statistics', 'is_deleted', 'tinyint(1) NOT NULL DEFAULT 0 COMMENT ''逻辑删除''');
+CALL add_column_if_missing('data_statistics', 'deleted_time', 'datetime DEFAULT NULL COMMENT ''逻辑删除时间''');
+CALL add_column_if_missing('data_statistics', 'deleted_reason', 'varchar(500) DEFAULT '''' COMMENT ''逻辑删除原因''');
 
 DROP PROCEDURE add_column_if_missing;
 
@@ -107,6 +126,25 @@ SET @drop_registration_booth_number_index = (
 PREPARE stmt_drop_registration_booth_number_index FROM @drop_registration_booth_number_index;
 EXECUTE stmt_drop_registration_booth_number_index;
 DEALLOCATE PREPARE stmt_drop_registration_booth_number_index;
+
+SET @drop_registration_booth_number_unique_indexes = (
+  SELECT IFNULL(
+    CONCAT(
+      'ALTER TABLE `registration_information` ',
+      GROUP_CONCAT(DISTINCT CONCAT('DROP INDEX `', index_name, '`') SEPARATOR ', ')
+    ),
+    'SELECT 1'
+  )
+  FROM information_schema.statistics
+  WHERE table_schema = DATABASE()
+    AND table_name = 'registration_information'
+    AND column_name = 'booth_number'
+    AND non_unique = 0
+    AND index_name <> 'PRIMARY'
+);
+PREPARE stmt_drop_registration_booth_number_unique_indexes FROM @drop_registration_booth_number_unique_indexes;
+EXECUTE stmt_drop_registration_booth_number_unique_indexes;
+DEALLOCATE PREPARE stmt_drop_registration_booth_number_unique_indexes;
 
 SET @create_registration_booth_number_index = (
   SELECT IF(

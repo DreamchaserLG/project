@@ -1,21 +1,23 @@
 <template>
   <div class="front_profile_page profile_page" id="user_center">
-    <section class="page_intro_card profile_intro" :style="bannerStyle">
-      <span class="page_kicker">User Center</span>
-      <h1>个人中心</h1>
-      <p>集中查看个人资料、报名记录、行程确认和退款申请，保持前台用户业务流程完整。</p>
+    <section class="profile_hero" :style="bannerStyle">
+      <div>
+        <span class="page_kicker">User Center</span>
+        <h1>个人中心</h1>
+        <p>集中查看个人资料、报名记录、行程确认和退款申请，便于用户跟踪完整的参展业务流程。</p>
+      </div>
     </section>
 
-    <section v-if="isLoading" class="profile_loading_card">
+    <section v-if="isLoading" class="profile_panel profile_loading">
       <strong>正在加载个人中心</strong>
-      <span>正在同步账号信息和最近业务记录，请稍候。</span>
+      <span>系统正在同步账号信息和最近业务记录，请稍候。</span>
     </section>
 
     <template v-else>
-      <section class="profile_dashboard_card">
-        <div class="profile_dashboard_identity">
+      <section class="profile_panel profile_summary">
+        <div class="profile_identity">
           <img class="profile_avatar" :src="avatarUrl" alt="avatar">
-          <div class="profile_identity_copy">
+          <div class="profile_identity_text">
             <div class="profile_identity_head">
               <h2>{{ profile.nickname || profile.username || "未登录用户" }}</h2>
               <span class="page_status_tag" :class="profile.state === 1 ? 'is-success' : 'is-muted'">
@@ -23,86 +25,80 @@
               </span>
             </div>
             <p>{{ profile.user_group || "普通用户" }}</p>
-            <span class="profile_identity_hint">统一管理个人资料、报名业务和后续参展流程。</span>
+            <span>统一管理个人资料、报名业务和后续参展流程。</span>
           </div>
         </div>
 
-        <div class="profile_metric_strip">
-          <article class="profile_metric_card">
+        <div class="profile_metrics">
+          <article>
             <strong>{{ registrationList.length }}</strong>
             <span>近期报名</span>
           </article>
-          <article class="profile_metric_card">
-            <strong>{{ refundList.length }}</strong>
-            <span>退款申请</span>
-          </article>
-          <article class="profile_metric_card">
+          <article>
             <strong>{{ travelList.length }}</strong>
             <span>行程确认</span>
           </article>
+          <article>
+            <strong>{{ refundList.length }}</strong>
+            <span>退款申请</span>
+          </article>
         </div>
 
-        <div class="profile_action_group">
+        <div class="profile_actions">
           <router-link class="page_primary_btn" to="/user/info">修改资料</router-link>
           <router-link class="page_secondary_btn" to="/user/password">修改密码</router-link>
         </div>
       </section>
 
-      <section class="profile_body_shell">
-        <div class="profile_body_grid">
-          <div class="profile_info_panel">
-            <div class="page_list_head compact_head">
-              <div>
-                <span class="page_kicker">Profile</span>
-                <h2>基础资料</h2>
-                <p>统一展示账号信息、联系方式和当前角色状态。</p>
-              </div>
-            </div>
-
-            <div class="profile_info_rows">
-              <div class="profile_info_row">
-                <label>用户名</label>
-                <span>{{ profile.username || "-" }}</span>
-              </div>
-              <div class="profile_info_row">
-                <label>昵称</label>
-                <span>{{ profile.nickname || "-" }}</span>
-              </div>
-              <div class="profile_info_row">
-                <label>手机号</label>
-                <span>{{ profile.phone || "-" }}</span>
-              </div>
-              <div class="profile_info_row">
-                <label>邮箱</label>
-                <span>{{ profile.email || "-" }}</span>
-              </div>
-              <div class="profile_info_row">
-                <label>用户角色</label>
-                <span>{{ profile.user_group || "-" }}</span>
-              </div>
-              <div class="profile_info_row">
-                <label>账号状态</label>
-                <span>{{ profile.state === 1 ? "正常" : "待确认" }}</span>
-              </div>
-            </div>
+      <section class="profile_grid">
+        <div class="profile_panel profile_info">
+          <div class="profile_section_head">
+            <span class="page_kicker">Profile</span>
+            <h2>基础资料</h2>
+            <p>展示账号信息、联系方式和当前角色状态。</p>
           </div>
 
-          <div class="profile_menu_panel">
-            <div class="page_list_head compact_head">
-              <div>
-                <span class="page_kicker">Shortcut</span>
-                <h2>快捷入口</h2>
-                <p>快速跳转到报名、退款、公告和常用业务页面。</p>
-              </div>
+          <div class="profile_info_rows">
+            <div class="profile_info_row">
+              <label>用户名</label>
+              <span>{{ profile.username || "-" }}</span>
             </div>
-            <list_admin_menu_user />
+            <div class="profile_info_row">
+              <label>昵称</label>
+              <span>{{ profile.nickname || "-" }}</span>
+            </div>
+            <div class="profile_info_row">
+              <label>手机号</label>
+              <span>{{ profile.phone || "-" }}</span>
+            </div>
+            <div class="profile_info_row">
+              <label>邮箱</label>
+              <span>{{ profile.email || "-" }}</span>
+            </div>
+            <div class="profile_info_row">
+              <label>用户角色</label>
+              <span>{{ profile.user_group || "-" }}</span>
+            </div>
+            <div class="profile_info_row">
+              <label>账号状态</label>
+              <span>{{ profile.state === 1 ? "正常" : "待确认" }}</span>
+            </div>
           </div>
+        </div>
+
+        <div class="profile_panel profile_shortcuts">
+          <div class="profile_section_head">
+            <span class="page_kicker">Shortcut</span>
+            <h2>快捷入口</h2>
+            <p>快速进入报名、退款、公告和常用业务页面。</p>
+          </div>
+          <list_admin_menu_user />
         </div>
       </section>
 
-      <section class="profile_record_grid">
-        <div class="profile_record_card">
-          <div class="page_list_head compact_head">
+      <section class="profile_records">
+        <div class="profile_panel profile_record_card">
+          <div class="profile_record_head">
             <div>
               <span class="page_kicker">Registration</span>
               <h2>最近报名</h2>
@@ -116,81 +112,37 @@
               :key="item.registration_information_id"
               class="profile_record_item"
             >
-              <router-link
-                class="profile_record_main"
-                to="/registration_information/table"
-              >
-                <div class="profile_record_title">{{ item.booth_name || item.exhibition_theme || "报名信息" }}</div>
-                <div class="profile_record_desc">{{ item.exhibition_theme }}</div>
+              <router-link class="profile_record_main" to="/registration_information/table">
+                <strong>{{ item.booth_name || item.exhibition_theme || "报名信息" }}</strong>
+                <span>{{ item.exhibition_theme || "会展信息待更新" }}</span>
               </router-link>
               <div class="profile_record_side">
                 <span class="page_status_tag" :class="tagClassByText(item.registration_status || item.report_status)">
                   {{ item.registration_status || item.report_status || "已报名" }}
                 </span>
-                <span>{{ formatDate(item.registration_time || item.payment_date) }}</span>
+                <small>{{ formatDate(item.registration_time || item.create_time) }}</small>
                 <el-button
                   v-if="item.examine_state === '已通过' && !hasTravelForRegistration(item)"
-                  class="profile_refund_btn"
                   type="primary"
                   size="mini"
                   @click="applyTravel(item)"
                 >行程确认</el-button>
-                <span
-                  v-else-if="hasTravelForRegistration(item)"
-                  class="page_status_tag is-success"
-                  style="margin-left: 8px;"
-                >行程已提交</span>
+                <span v-else-if="hasTravelForRegistration(item)" class="page_status_tag is-success">行程已提交</span>
                 <el-button
                   v-if="item.examine_state === '已通过' && !hasRefundForRegistration(item)"
-                  class="profile_refund_btn"
                   type="warning"
                   size="mini"
                   @click="applyRefund(item)"
                 >申请退款</el-button>
-                <span
-                  v-else-if="hasRefundForRegistration(item)"
-                  class="page_status_tag is-warning"
-                  style="margin-left: 8px;"
-                >已申请退款</span>
+                <span v-else-if="hasRefundForRegistration(item)" class="page_status_tag is-warning">已申请退款</span>
               </div>
             </div>
           </div>
           <div v-else class="page_empty_state">暂无报名记录</div>
         </div>
 
-        <div class="profile_record_card">
-          <div class="page_list_head compact_head">
-            <div>
-              <span class="page_kicker">Refund</span>
-              <h2>退款申请</h2>
-            </div>
-            <router-link class="page_link_pill" to="/refund_request/table">查看全部</router-link>
-          </div>
-
-          <div v-if="refundList.length" class="profile_record_list">
-            <router-link
-              v-for="item in refundList"
-              :key="item.refund_request_id"
-              class="profile_record_item"
-              to="/refund_request/table"
-            >
-              <div class="profile_record_main">
-                <div class="profile_record_title">{{ item.reason_for_application || "退款申请" }}</div>
-                <div class="profile_record_desc">退款金额：￥{{ formatPrice(item.booth_prices) }}</div>
-              </div>
-              <div class="profile_record_side">
-                <span class="page_status_tag" :class="tagClassByText(item.refund_status || item.review_status, 'is-warning')">
-                  {{ item.refund_status || item.review_status || "处理中" }}
-                </span>
-                <span>{{ formatDate(item.application_time || item.create_time) }}</span>
-              </div>
-            </router-link>
-          </div>
-          <div v-else class="page_empty_state">暂无退款申请记录</div>
-        </div>
-
-        <div class="profile_record_card">
-          <div class="page_list_head compact_head">
+        <div class="profile_panel profile_record_card">
+          <div class="profile_record_head">
             <div>
               <span class="page_kicker">Travel</span>
               <h2>行程确认</h2>
@@ -206,16 +158,47 @@
               to="/travel_confirmation/table"
             >
               <div class="profile_record_main">
-                <div class="profile_record_title">{{ item.exhibition_theme || item.booth_name || "行程确认" }}</div>
-                <div class="profile_record_desc">到场人数：{{ item.number_of_attendees || 0 }}</div>
+                <strong>{{ item.exhibition_theme || item.booth_name || "行程确认" }}</strong>
+                <span>到场人数：{{ item.number_of_attendees || 0 }}</span>
               </div>
               <div class="profile_record_side">
-                <span class="page_status_tag is-success">{{ item.confirmation_status || "已确认" }}</span>
-                <span>{{ formatDate(item.confirm_time || item.create_time) }}</span>
+                <span class="page_status_tag is-success">{{ item.examine_state || "已提交" }}</span>
+                <small>{{ formatDate(item.confirm_time || item.create_time) }}</small>
               </div>
             </router-link>
           </div>
           <div v-else class="page_empty_state">暂无行程确认记录</div>
+        </div>
+
+        <div class="profile_panel profile_record_card">
+          <div class="profile_record_head">
+            <div>
+              <span class="page_kicker">Refund</span>
+              <h2>退款申请</h2>
+            </div>
+            <router-link class="page_link_pill" to="/refund_request/table">查看全部</router-link>
+          </div>
+
+          <div v-if="refundList.length" class="profile_record_list">
+            <router-link
+              v-for="item in refundList"
+              :key="item.refund_request_id"
+              class="profile_record_item"
+              to="/refund_request/table"
+            >
+              <div class="profile_record_main">
+                <strong>{{ item.reason_for_application || "退款申请" }}</strong>
+                <span>退款金额：¥{{ formatPrice(item.booth_prices) }}</span>
+              </div>
+              <div class="profile_record_side">
+                <span class="page_status_tag" :class="tagClassByText(item.examine_state, 'is-warning')">
+                  {{ item.examine_state || "处理中" }}
+                </span>
+                <small>{{ formatDate(item.application_time || item.create_time) }}</small>
+              </div>
+            </router-link>
+          </div>
+          <div v-else class="page_empty_state">暂无退款申请记录</div>
         </div>
       </section>
     </template>
@@ -233,6 +216,7 @@ export default {
     return {
       isLoading: true,
       profile: {
+        user_id: 0,
         username: "",
         nickname: "",
         avatar: "",
@@ -327,6 +311,7 @@ export default {
         const userRes = await this.$get("~/api/user/get_obj", { user_id: userId });
         const userObj = userRes?.result?.obj || {};
         const nextProfile = {
+          user_id: userId,
           username: userObj.username || "",
           nickname: userObj.nickname || sessionStorage.getItem("nickname") || "",
           avatar: userObj.avatar || sessionStorage.getItem("avatar") || "",
@@ -484,7 +469,7 @@ export default {
       if (/成功|通过|正常|已确认|已报名|已完成|转正/.test(text)) {
         return "is-success";
       }
-      if (/待|审核|候补|处理中|申请中/.test(text)) {
+      if (/待|审核|候补|处理中|申请中|未审核/.test(text)) {
         return "is-warning";
       }
       if (/取消|失败|驳回|结束|关闭|退款/.test(text)) {
@@ -497,39 +482,64 @@ export default {
 </script>
 
 <style scoped>
-.profile_loading_card,
-.profile_dashboard_card,
-.profile_body_shell,
-.profile_record_card {
-  padding: 1.5rem 1.6rem;
+.profile_page {
+  display: grid;
+  gap: 1.2rem;
+}
+
+.profile_hero {
+  min-height: 260px;
+  display: flex;
+  align-items: flex-end;
+  padding: 2.2rem;
   border-radius: 30px;
-  background: rgba(255, 255, 255, 0.95);
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(7, 24, 34, 0.82), rgba(7, 24, 34, 0.2)),
+    var(--page-banner-image) center/cover no-repeat;
+  color: #fff;
+  box-shadow: var(--shadow_deep);
+}
+
+.profile_hero h1 {
+  margin: 0.7rem 0 0;
+  font-size: 2.45rem;
+}
+
+.profile_hero p {
+  max-width: 44rem;
+  margin: 0.75rem 0 0;
+  line-height: 1.9;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.profile_panel {
+  padding: 1.45rem 1.55rem;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(15, 54, 80, 0.08);
   box-shadow: var(--shadow_soft);
 }
 
-.profile_loading_card {
-  display: flex;
-  flex-direction: column;
+.profile_loading {
+  display: grid;
   gap: 0.45rem;
-  margin-top: 1.2rem;
   color: var(--color_text_soft);
 }
 
-.profile_loading_card strong {
+.profile_loading strong {
   color: var(--color_text);
   font-size: 1.1rem;
 }
 
-.profile_dashboard_card {
+.profile_summary {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.95fr) auto;
-  gap: 1.1rem;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.9fr) auto;
+  gap: 1rem;
   align-items: center;
-  margin-top: 1.2rem;
 }
 
-.profile_dashboard_identity {
+.profile_identity {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -546,123 +556,110 @@ export default {
   flex-shrink: 0;
 }
 
-.profile_identity_copy {
+.profile_identity_text {
   min-width: 0;
 }
 
 .profile_identity_head {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.7rem;
   flex-wrap: wrap;
 }
 
 .profile_identity_head h2 {
   margin: 0;
   color: var(--color_text);
-  font-size: 1.72rem;
+  font-size: 1.7rem;
 }
 
-.profile_identity_copy p {
-  margin: 0.45rem 0 0;
+.profile_identity_text p {
+  margin: 0.4rem 0 0;
   color: var(--color_text_soft);
-  font-size: 1rem;
 }
 
-.profile_identity_hint {
+.profile_identity_text > span {
   display: block;
   margin-top: 0.55rem;
   color: var(--color_text_soft);
   line-height: 1.75;
 }
 
-.profile_metric_strip {
+.profile_metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.85rem;
+  gap: 0.8rem;
 }
 
-.profile_metric_card {
-  padding: 1rem 0.9rem;
-  border-radius: 20px;
+.profile_metrics article {
+  padding: 1rem 0.85rem;
+  border-radius: 18px;
   background: linear-gradient(180deg, #ffffff, #f4f8fb);
   border: 1px solid rgba(15, 54, 80, 0.08);
   text-align: center;
 }
 
-.profile_metric_card strong {
+.profile_metrics strong {
   display: block;
   color: var(--color_primary);
   font-family: var(--font_heading);
   font-size: 1.7rem;
 }
 
-.profile_metric_card span {
+.profile_metrics span {
   display: block;
   margin-top: 0.35rem;
   color: var(--color_text_soft);
   font-size: 0.88rem;
 }
 
-.profile_action_group {
+.profile_actions {
   display: grid;
   gap: 0.75rem;
 }
 
-.profile_action_group :deep(.page_primary_btn),
-.profile_action_group :deep(.page_secondary_btn),
-.profile_action_group .page_primary_btn,
-.profile_action_group .page_secondary_btn {
-  min-width: 150px;
+.profile_actions .page_primary_btn,
+.profile_actions .page_secondary_btn {
+  min-width: 138px;
   text-align: center;
 }
 
-.profile_body_shell,
-.profile_body_grid,
-.profile_record_grid {
-  margin-top: 1.2rem;
-}
-
-.profile_body_grid {
+.profile_grid {
   display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(340px, 0.95fr);
   gap: 1.2rem;
-}
-
-.profile_body_grid {
-  grid-template-columns: minmax(0, 1.06fr) minmax(360px, 0.94fr);
   align-items: start;
 }
 
-.profile_info_panel {
-  min-width: 0;
-  padding-right: 1.2rem;
-  border-right: 1px solid rgba(15, 54, 80, 0.08);
-}
-
-.profile_menu_panel {
-  min-width: 0;
-  padding-left: 0.1rem;
-}
-
-.compact_head {
+.profile_section_head {
   margin-bottom: 1rem;
 }
 
-.compact_head h2 {
-  font-size: 1.5rem;
+.profile_section_head h2,
+.profile_record_head h2 {
+  margin: 0.5rem 0 0;
+  color: var(--color_text);
+  font-size: 1.45rem;
+}
+
+.profile_section_head p {
+  margin: 0.55rem 0 0;
+  color: var(--color_text_soft);
+  line-height: 1.75;
 }
 
 .profile_info_rows {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem 1rem;
+  gap: 0.75rem;
 }
 
 .profile_info_row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
   align-items: center;
-  min-height: 52px;
-  padding: 0.6rem 1rem;
+  min-height: 54px;
+  padding: 0.65rem 0.9rem;
   border-radius: 16px;
   background: #fff;
   border: 1px solid rgba(15, 54, 80, 0.08);
@@ -670,64 +667,58 @@ export default {
 }
 
 .profile_info_row label {
-  flex-shrink: 0;
-  width: 80px;
-  color: var(--color_text_sub);
-  font-size: 0.88rem;
-  text-align: right;
-  padding-right: 0.8rem;
+  padding-right: 0.75rem;
+  margin-right: 0.75rem;
   border-right: 1px solid rgba(15, 54, 80, 0.08);
-  margin-right: 0.8rem;
+  color: var(--color_text_soft);
+  text-align: right;
+  font-size: 0.88rem;
 }
 
 .profile_info_row span {
-  flex: 1;
   min-width: 0;
-  color: var(--color_text);
-  font-size: 0.9rem;
   overflow: hidden;
+  color: var(--color_text);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-@media (max-width: 768px) {
-  .profile_info_rows {
-    grid-template-columns: 1fr;
-  }
-}
-
-.profile_record_grid {
-  display: flex;
+.profile_records {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.2rem;
   align-items: stretch;
-  width: 100%;
 }
 
 .profile_record_card {
   display: flex;
-  flex: 1 1 0;
   flex-direction: column;
-  min-height: 100%;
   min-width: 0;
 }
 
-.profile_record_list {
+.profile_record_head {
   display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.profile_record_list {
+  display: grid;
+  gap: 0.8rem;
 }
 
 .profile_record_item {
   display: flex;
-  align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.85rem 1rem;
+  min-width: 0;
+  padding: 0.85rem 0.95rem;
   border-radius: 16px;
   background: #fff;
   border: 1px solid rgba(15, 54, 80, 0.08);
   box-shadow: 0 4px 12px rgba(16, 34, 51, 0.04);
-  transition: transform 0.2s ease;
 }
 
 .profile_record_main {
@@ -735,84 +726,69 @@ export default {
   flex: 1;
 }
 
-.profile_record_title {
-  display: -webkit-box;
+.profile_record_main strong {
+  display: block;
   overflow: hidden;
   color: var(--color_text);
-  font-weight: 700;
-  line-height: 1.65;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.profile_record_desc {
-  margin-top: 0.4rem;
+.profile_record_main span {
+  display: block;
+  margin-top: 0.35rem;
   color: var(--color_text_soft);
-  line-height: 1.75;
+  line-height: 1.65;
 }
 
 .profile_record_side {
   display: flex;
+  flex-shrink: 0;
   flex-direction: column;
   align-items: flex-end;
   gap: 0.4rem;
   color: var(--color_text_soft);
   font-size: 0.88rem;
-  flex-shrink: 0;
 }
 
-.profile_refund_btn {
-  margin-top: 4px;
-  font-size: 12px;
+.profile_record_side .el-button {
+  margin: 0;
   padding: 4px 10px;
+  font-size: 12px;
 }
 
 @media (max-width: 1280px) {
-  .profile_dashboard_card {
+  .profile_summary,
+  .profile_grid,
+  .profile_records {
     grid-template-columns: 1fr;
   }
 
-  .profile_action_group {
+  .profile_actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 1100px) {
-  .profile_body_grid,
-  .profile_record_grid {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .profile_info_panel {
-    padding-right: 0;
-    border-right: none;
-  }
-
-  .profile_menu_panel {
-    padding-left: 0;
-    padding-top: 1.2rem;
-    border-top: 1px solid rgba(15, 54, 80, 0.08);
-  }
-}
-
 @media (max-width: 760px) {
-  .profile_metric_strip,
-  .profile_info_rows,
-  .profile_action_group {
-    grid-template-columns: 1fr;
+  .profile_hero {
+    min-height: 220px;
+    padding: 1.35rem;
   }
 
-  .profile_dashboard_identity,
+  .profile_hero h1 {
+    font-size: 1.9rem;
+  }
+
+  .profile_identity,
   .profile_record_item {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .profile_info_row {
+  .profile_metrics,
+  .profile_info_rows,
+  .profile_actions {
     grid-template-columns: 1fr;
-    gap: 0.35rem;
-    padding: 0.95rem 1rem;
   }
 
   .profile_record_side {

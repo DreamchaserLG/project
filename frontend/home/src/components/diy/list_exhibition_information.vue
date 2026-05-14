@@ -30,6 +30,8 @@
 </template>
 
 <script>
+import { formatEventTimeForDisplay } from "@/utils/eventTime";
+
 export default {
   props: {
     list: {
@@ -62,14 +64,7 @@ export default {
       return path ? this.$fullUrl(path) : this.fallbackImage;
     },
     formatDate(value) {
-      if (!value) {
-        return "时间待更新";
-      }
-      try {
-        return this.$toTime(value, "yyyy-MM-dd");
-      } catch (error) {
-        return value;
-      }
+      return formatEventTimeForDisplay(value, "date");
     },
     toDetails(item) {
       const query = { exhibition_information_id: item.exhibition_information_id };

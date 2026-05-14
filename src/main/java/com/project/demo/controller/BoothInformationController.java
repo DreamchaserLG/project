@@ -7,6 +7,7 @@ import com.project.demo.service.BoothInformationService;
 import com.alibaba.fastjson.JSON;
 import com.project.demo.controller.base.BaseController;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.util.StringUtils;
@@ -31,15 +32,18 @@ import java.util.*;
 public class BoothInformationController extends BaseController<BoothInformation, BoothInformationService> {
 
     private final BusinessAccessService accessService;
+    private final JdbcTemplate jdbcTemplate;
 
     /**
      * 展位信息对象
      */
     @Autowired
     public BoothInformationController(BoothInformationService service,
-                                      BusinessAccessService accessService) {
+                                      BusinessAccessService accessService,
+                                      JdbcTemplate jdbcTemplate) {
         setService(service);
         this.accessService = accessService;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @RequestMapping("/get_list")
@@ -82,6 +86,10 @@ public class BoothInformationController extends BaseController<BoothInformation,
             Object value = entry.getValue();
             return value instanceof String && ((String) value).isEmpty();
         });
+        String validateMessage = validateBoothInput(paramMap);
+        if (validateMessage != null) {
+            return error(30000, validateMessage);
+        }
         BoothInformation booth_information = new BoothInformation();
             booth_information.setBooth_number(paramMap.get("booth_number")==null?null:String.valueOf(paramMap.get("booth_number")));
                     Map<String, String> mapbooth_number = new HashMap<>();
@@ -122,6 +130,10 @@ public class BoothInformationController extends BaseController<BoothInformation,
             Object value = entry.getValue();
             return value instanceof String && ((String) value).isEmpty();
         });
+        String validateMessage = validateBoothInput(paramMap);
+        if (validateMessage != null) {
+            return error(30000, validateMessage);
+        }
         BoothInformation booth_information = new BoothInformation();
             booth_information.setBooth_number(paramMap.get("booth_number")==null?null:String.valueOf(paramMap.get("booth_number")));
                     booth_information.setExhibitionconvention_number(paramMap.get("exhibitionconvention_number")==null?null:String.valueOf(paramMap.get("exhibitionconvention_number")));
@@ -174,6 +186,58 @@ public class BoothInformationController extends BaseController<BoothInformation,
             return "审核成功";
         } else {
             return "审核失败：记录不存在";
+        }
+    }
+
+    private String validateBoothInput(Map<String, Object> paramMap) {
+        if (paramMap.containsKey("booth_prices")) {
+            Double price = doubleValue(paramMap.get("booth_prices"));
+            if (price == null || price <= 0) {
+                return "展位价格必须大于0";
+            }
+        }
+        if (paramMap.containsKey("registration_information_limit_times")) {
+            Integer limit = intValue(paramMap.get("registration_information_limit_times"));
+            if (limit == null || limit < 0) {
+                return "报名限制次数不能小于0";
+            }
+        }
+        String exhibitionNumber = stringValue(paramMap.get("exhibitionconvention_number"));
+        if (exhibitionNumber != null) {
+            Integer count = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM exhibition_information WHERE IFNULL(is_deleted, 0) = 0 AND exhibitionconvention_number = ?",
+                    Integer.class,
+                    exhibitionNumber);
+            if (count == null || count == 0) {
+                return "关联会展不存在";
+            }
+        }
+        return null;
+    }
+
+    private String stringValue(Object rawValue) {
+        if (rawValue == null) {
+            return null;
+        }
+        String value = String.valueOf(rawValue).trim();
+        return value.isEmpty() || "null".equalsIgnoreCase(value) || "undefined".equalsIgnoreCase(value) ? null : value;
+    }
+
+    private Integer intValue(Object rawValue) {
+        try {
+            String value = stringValue(rawValue);
+            return value == null ? null : Integer.valueOf(value);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private Double doubleValue(Object rawValue) {
+        try {
+            String value = stringValue(rawValue);
+            return value == null ? null : Double.valueOf(value);
+        } catch (Exception e) {
+            return null;
         }
     }
 }

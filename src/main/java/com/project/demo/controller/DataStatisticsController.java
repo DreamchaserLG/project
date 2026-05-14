@@ -46,7 +46,16 @@ public class DataStatisticsController extends BaseController<DataStatistics, Dat
         if (blocked != null) {
             return blocked;
         }
-        return super.getList(request);
+        return success(service.businessStatisticsPage(service.readQuery(request)));
+    }
+
+    @RequestMapping("/business_overview")
+    public Map<String, Object> businessOverview(HttpServletRequest request) {
+        Map<String, Object> blocked = requireAdmin(request);
+        if (blocked != null) {
+            return blocked;
+        }
+        return success(service.businessOverview());
     }
 
     @RequestMapping("/get_obj")
@@ -131,13 +140,17 @@ public class DataStatisticsController extends BaseController<DataStatistics, Dat
             data_statistics.setStatistics_number(paramMap.get("statistics_number")==null?null:String.valueOf(paramMap.get("statistics_number")));
                             data_statistics.setStatistics_type(paramMap.get("statistics_type")==null?null:String.valueOf(paramMap.get("statistics_type")));
                             data_statistics.setStatistical_indicators(paramMap.get("statistical_indicators")==null?null:String.valueOf(paramMap.get("statistical_indicators")));
+                            String metricError = validateTypeIndicator(data_statistics.getStatistics_type(), data_statistics.getStatistical_indicators());
+        if (metricError != null) {
+            return error(30000, metricError);
+        }
                             if (paramMap.get("statistics_date" ) != null && !StringUtils.isEmpty(String.valueOf(paramMap.get("statistics_date" )))) {
             String timStr = String.valueOf(paramMap.get("statistics_date" ));
             data_statistics.setStatistics_date(parseToTimestamp(timStr));
         } else {
-            data_statistics.setStatistics_date(null);
+            data_statistics.setStatistics_date(new java.sql.Timestamp(System.currentTimeMillis()));
         }
-                            data_statistics.setStatistical_results(paramMap.get("statistical_results")==null?null:Double.valueOf(String.valueOf(paramMap.get("statistical_results"))));
+                            data_statistics.setStatistical_results(service.calculateMetric(data_statistics.getStatistics_type(), data_statistics.getStatistical_indicators()));
                             data_statistics.setHost_user(paramMap.get("host_user")==null?null:Integer.valueOf(String.valueOf(paramMap.get("host_user"))));
                                                                             data_statistics.setCreate_by(paramMap.get("create_by")==null?null:Integer.valueOf(String.valueOf(paramMap.get("create_by"))));
         this.addEntity(data_statistics);
@@ -164,13 +177,19 @@ public class DataStatisticsController extends BaseController<DataStatistics, Dat
             data_statistics.setStatistics_number(paramMap.get("statistics_number")==null?null:String.valueOf(paramMap.get("statistics_number")));
                     data_statistics.setStatistics_type(paramMap.get("statistics_type")==null?null:String.valueOf(paramMap.get("statistics_type")));
                     data_statistics.setStatistical_indicators(paramMap.get("statistical_indicators")==null?null:String.valueOf(paramMap.get("statistical_indicators")));
+                    if (data_statistics.getStatistics_type() != null || data_statistics.getStatistical_indicators() != null) {
+            String metricError = validateTypeIndicator(data_statistics.getStatistics_type(), data_statistics.getStatistical_indicators());
+            if (metricError != null) {
+                return error(30000, metricError);
+            }
+        }
                     if (paramMap.get("statistics_date" ) != null && !StringUtils.isEmpty(String.valueOf(paramMap.get("statistics_date" )))) {
             String timStr = String.valueOf(paramMap.get("statistics_date" ));
             data_statistics.setStatistics_date(parseToTimestamp(timStr));
         } else {
             data_statistics.setStatistics_date(null);
         }
-                    data_statistics.setStatistical_results(paramMap.get("statistical_results")==null?null:Double.valueOf(String.valueOf(paramMap.get("statistical_results"))));
+                    data_statistics.setStatistical_results(service.calculateMetric(data_statistics.getStatistics_type(), data_statistics.getStatistical_indicators()));
                     data_statistics.setHost_user(paramMap.get("host_user")==null?null:Integer.valueOf(String.valueOf(paramMap.get("host_user"))));
                             this.setEntity(queryMap,configMap,data_statistics);
         recordAudit(request, "修改", "成功", "数据统计");
@@ -185,5 +204,11 @@ public class DataStatisticsController extends BaseController<DataStatistics, Dat
         return error(30000, "数据统计模块仅管理员可访问");
     }
 
+    private String validateTypeIndicator(String statisticsType, String indicator) {
+        if (!service.isValidTypeIndicator(statisticsType, indicator)) {
+            return "统计类型与统计指标不匹配：报名统计仅支持报名人数、候补人数、审核通过人数；财务统计仅支持成交额、退款金额、实际收入；行程统计仅支持行程确认人数、到场人数";
+        }
+        return null;
+    }
 
 }

@@ -77,7 +77,7 @@
 						<div class="diy_field diy_down">
 							<select id="form_host_user" :disabled="disabledObj['host_user_isDisabled']" v-model="form['host_user']" v-if="(form['host_user'] && $check_field('set','host_user')) || (!form['host_user'] && $check_field('add','host_user'))" >
 								<option v-for="o in list_user_host_user" :value="o['user_id']">
-									{{o['nickname'] + '-' + o['username']}}
+									{{ formatUserDisplay(o) }}
 								</option>
 							</select>
 							<span v-else-if="$check_field('get','host_user')">{{ get_user_info("host_user", form['host_user']) }}</span>
@@ -134,7 +134,7 @@
 						<div class="diy_field diy_down">
 							<select id="form_enrolled_user" :disabled="disabledObj['enrolled_user_isDisabled']" v-model="form['enrolled_user']" v-if="(form['enrolled_user'] && $check_field('set','enrolled_user')) || (!form['enrolled_user'] && $check_field('add','enrolled_user'))" >
 								<option v-for="o in list_user_enrolled_user" :value="o['user_id']">
-									{{o['nickname'] + '-' + o['username']}}
+									{{ formatUserDisplay(o) }}
 								</option>
 							</select>
 							<span v-else-if="$check_field('get','enrolled_user')">{{ get_user_info("enrolled_user", form['enrolled_user']) }}</span>
@@ -739,6 +739,17 @@
 				
 				
 				
+			formatUserDisplay(obj){
+				if (!obj) {
+					return "";
+				}
+				const nickname = String(obj.nickname || "").trim();
+				const username = String(obj.username || "").trim();
+				if (nickname && username && nickname !== username) {
+					return nickname + "-" + username;
+				}
+				return nickname || username;
+			},
 		  		get_user_info(name,id){
 				var obj = null;
           				  if (name == 'host_user'){
@@ -747,9 +758,9 @@
           				  if (name == 'enrolled_user'){
 					  obj = this.list_user_enrolled_user.getObj({"user_id":id});
 				  }
-                				var ret = "";
+				var ret = "";
 				if(obj){
-				  ret = obj.nickname+"-"+obj.username;
+				  ret = this.formatUserDisplay(obj);
 				}
 				return ret;
 			},

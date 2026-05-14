@@ -101,6 +101,10 @@ public class RefundRequestController extends BaseController<RefundRequest, Refun
         if (validateMessage != null) {
             return error(30000, validateMessage);
         }
+        String amountMessage = validateRefundAmount(registrationId, paramMap);
+        if (amountMessage != null) {
+            return error(30000, amountMessage);
+        }
 
         RefundRequest refundRequest = buildRefundRequest(paramMap, true);
         this.addEntity(refundRequest);
@@ -146,6 +150,13 @@ public class RefundRequestController extends BaseController<RefundRequest, Refun
                     "refund_request", "refund_request_id", refundRequestId, actor);
             if (permissionMessage != null) {
                 return error(30000, permissionMessage);
+            }
+        }
+        Integer registrationIdForAmount = getRefundSourceId(queryMap, paramMap, refundRequest);
+        if (registrationIdForAmount != null && paramMap.containsKey("booth_prices")) {
+            String amountMessage = validateRefundAmount(registrationIdForAmount, paramMap);
+            if (amountMessage != null) {
+                return error(30000, amountMessage);
             }
         }
         markAppealResolvedIfNeeded(queryMap, paramMap, refundRequest);
@@ -288,6 +299,25 @@ public class RefundRequestController extends BaseController<RefundRequest, Refun
         return refundRequest;
     }
 
+    private String validateRefundAmount(Integer registrationId, Map<String, Object> paramMap) {
+        Map<String, Object> registration = registrationWaitlistService.getRegistration(registrationId);
+        if (registration == null) {
+            return "报名记录不存在";
+        }
+        Double registrationAmount = doubleValue(registration.get("booth_prices"));
+        Double requestedAmount = doubleValue(paramMap.get("booth_prices"));
+        if (requestedAmount == null) {
+            requestedAmount = registrationAmount;
+        }
+        if (requestedAmount == null || requestedAmount <= 0) {
+            return "退款金额必须大于0";
+        }
+        if (registrationAmount != null && registrationAmount > 0 && requestedAmount > registrationAmount) {
+            return "退款金额不能超过报名成交金额";
+        }
+        return null;
+    }
+
     private void fillFromRegistration(Map<String, Object> paramMap) {
         Integer registrationId = intValue(paramMap.get("source_id"));
         if (registrationId == null || registrationId <= 0) {
@@ -323,7 +353,7 @@ public class RefundRequestController extends BaseController<RefundRequest, Refun
             return null;
         }
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT registration_information_id FROM registration_information WHERE order_number = ? ORDER BY registration_information_id DESC LIMIT 1",
+                "SELECT registration_information_id FROM registration_information WHERE IFNULL(is_deleted, 0) = 0 AND order_number = ? ORDER BY registration_information_id DESC LIMIT 1",
                 orderNumber
         );
         return rows.isEmpty() ? null : intValue(rows.get(0).get("registration_information_id"));
@@ -369,7 +399,7 @@ public class RefundRequestController extends BaseController<RefundRequest, Refun
             return false;
         }
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT examine_state FROM refund_request WHERE refund_request_id = ? LIMIT 1",
+                "SELECT examine_state FROM refund_request WHERE IFNULL(is_deleted, 0) = 0 AND refund_request_id = ? LIMIT 1",
                 refundRequestId);
         if (rows.isEmpty()) {
             return false;
@@ -416,7 +446,7 @@ public class RefundRequestController extends BaseController<RefundRequest, Refun
         }
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT escalate_state FROM refund_request WHERE refund_request_id = ? LIMIT 1",
+                "SELECT escalate_state FROM refund_request WHERE IFNULL(is_deleted, 0) = 0 AND refund_request_id = ? LIMIT 1",
                 refundRequestId);
         if (!rows.isEmpty() && "已申诉".equals(stringValue(rows.get(0).get("escalate_state")))) {
             refundRequest.setEscalate_state("已处理");
@@ -455,8 +485,8 @@ public class RefundRequestController extends BaseController<RefundRequest, Refun
         }
 
         if (queryMap != null && queryMap.get("refund_request_id") != null) {
-            List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                    "SELECT source_id FROM refund_request WHERE refund_request_id = ? LIMIT 1",
+                List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                    "SELECT source_id FROM refund_request WHERE IFNULL(is_deleted, 0) = 0 AND refund_request_id = ? LIMIT 1",
                     intValue(queryMap.get("refund_request_id"))
             );
             if (!rows.isEmpty()) {
@@ -476,7 +506,7 @@ public class RefundRequestController extends BaseController<RefundRequest, Refun
         Integer registrationId = intValue(paramMap.get("source_id"));
         if (registrationId != null) {
             List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                    "SELECT order_number FROM registration_information WHERE registration_information_id = ? LIMIT 1",
+                    "SELECT order_number FROM registration_information WHERE IFNULL(is_deleted, 0) = 0 AND registration_information_id = ? LIMIT 1",
                     registrationId
             );
             if (!rows.isEmpty()) {

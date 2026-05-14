@@ -120,6 +120,7 @@
 
 <script>
 import mixin from "@/mixins/component.js";
+import { formatEventTimeForDisplay } from "@/utils/eventTime";
 
 export default {
   mixins: [mixin],
@@ -192,14 +193,7 @@ export default {
       return ret;
     },
     formatDateTime(value) {
-      if (!value) {
-        return "时间待更新";
-      }
-      try {
-        return this.$toTime(value, "yyyy-MM-dd hh:mm");
-      } catch (error) {
-        return value;
-      }
+      return formatEventTimeForDisplay(value, "minute");
     },
     stripHtml(content) {
       return String(content || "")

@@ -405,7 +405,7 @@ insert into `booth_information` values (12,'A01','会展编号12','会展主题1
 DROP TABLE IF EXISTS `registration_information`;
 CREATE TABLE `registration_information`(registration_information_id int(11) NOT NULL AUTO_INCREMENT COMMENT '报名信息ID',
 `order_number` varchar(64) comment '订单编号',
-`booth_number` varchar(64) NOT NULL UNIQUE comment '展位编号',
+`booth_number` varchar(64) NOT NULL comment '展位编号',
 `exhibitionconvention_number` varchar(64) comment '会展编号',
 `exhibition_theme` varchar(64) comment '会展主题',
 `host_user` int(11) DEFAULT 0 comment '主办用户',
@@ -431,7 +431,8 @@ CREATE TABLE `registration_information`(registration_information_id int(11) NOT 
 `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
 `create_by` int(11) DEFAULT '1' NOT NULL comment '创建用户ID',
 `update_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-PRIMARY KEY (registration_information_id))ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 comment '报名信息';
+PRIMARY KEY (registration_information_id),
+KEY `idx_registration_booth_number` (`booth_number`))ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 comment '报名信息';
 insert into `registration_information` values (1,'ORD004','D02','CONF-2024-A01','全球美食文化节',0,'机遇之门','主题展馆',1,0,'周涛','15500155000',1,'','报名备注1','','','已通过','','未支付','支付宝',1,1,'','','2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
 insert into `registration_information` values (2,'ORD011','D01','EXPO2024-005','国际动漫游戏展',0,'合作桥梁','商务洽谈区',2,0,'张伟','13400134000',2,'','报名备注2','','','已通过','','未支付','支付宝',1,1,'','','2026-04-16 21:03:33',1,'2026-04-16 21:03:33');
 insert into `registration_information` values (3,'ORD003','B02','EXPO2024-003','世界旅游文化展',0,'品牌舞台','特装展位',3,0,'刘洋','13500135000',3,'','报名备注3','','','已通过','','未支付','支付宝',1,1,'','','2026-04-16 21:03:33',1,'2026-04-16 21:03:33');

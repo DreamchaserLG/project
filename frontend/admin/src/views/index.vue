@@ -47,7 +47,10 @@
 							<el-table-column prop="registration_people" label="报名人数" width="90" align="right" />
 							<el-table-column prop="attendee_people" label="实际参展" width="90" align="right" />
 							<el-table-column label="成交额" width="110" align="right">
-								<template slot-scope="{ row }">{{ formatMoney(row.revenue) }}</template>
+								<template slot-scope="{ row }">{{ formatMoney(row.deal_amount) }}</template>
+							</el-table-column>
+							<el-table-column label="退款金额" width="110" align="right">
+								<template slot-scope="{ row }">{{ formatMoney(row.refund_amount) }}</template>
 							</el-table-column>
 						</el-table>
 					</div>
@@ -130,8 +133,14 @@ export default {
 					const s = summary.result;
 					this.dataScreen = [
 						{ label: "总展会数", value: s.total_exhibitions || 0, field: "exhibition_information" },
-						{ label: "总报名人数", value: s.total_registration_people || 0, field: "registration_information" },
-						{ label: "总成交额", value: this.formatMoney(s.total_revenue), field: "" },
+						{ label: "报名人数", value: s.registration_people || 0, field: "registration_information" },
+						{ label: "实际参展人数", value: s.actual_attendee_people || 0, field: "travel_confirmation" },
+						{ label: "展位使用数量", value: s.used_booth_count || 0, field: "booth_information" },
+						{ label: "行程确认人数", value: s.travel_confirm_people || 0, field: "travel_confirmation" },
+						{ label: "退款人数", value: s.refund_people || 0, field: "refund_request" },
+						{ label: "成交金额", value: this.formatMoney(s.deal_amount), field: "" },
+						{ label: "退款金额", value: this.formatMoney(s.refund_amount), field: "" },
+						{ label: "实际收入", value: this.formatMoney(s.actual_income), field: "" },
 						{ label: "待审核报名", value: s.pending_registration || 0, field: "registration_information", query: { examine_state: "未审核" } },
 						{ label: "待审核退款", value: s.pending_refund || 0, field: "refund_request", query: { examine_state: "未审核" } },
 						{ label: "待审核行程确认", value: s.pending_travel || 0, field: "travel_confirmation", query: { examine_state: "未审核" } },
@@ -155,29 +164,16 @@ export default {
 			return "￥" + num.toFixed(2);
 		},
 		get_list_count() {
-			let list = [
-				{ label: "用户数量", value: "0", field: "user" },
-				{ label: "文章数量", value: "0", field: "article" },
-				{ label: "轮播图数", value: "0", field: "slides" },
-				{ label: "公告数量", value: "0", field: "notice" },
-				{ label: "评论数量", value: "0", field: "comment" },
-				{ label: "收藏数量", value: "0", field: "collect" },
+			const businessList = [
+				{ label: "会展数量", value: "0", field: "exhibition_information" },
+				{ label: "展位数量", value: "0", field: "booth_information" },
+				{ label: "报名数量", value: "0", field: "registration_information" },
+				{ label: "行程确认", value: "0", field: "travel_confirmation" },
+				{ label: "退款申请", value: "0", field: "refund_request" },
 			];
-			let tables = this.$store.state.web.auth || [];
-			let site_list = ["registration_information", "travel_confirmation", "refund_request"];
-			let added = [];
-			for (let i = 0; i < tables.length; i++) {
-				let o = tables[i];
-				if (o.path && o.path.indexOf("/table") !== -1 && site_list.indexOf(o.table_name) !== -1) {
-					if (added.indexOf(o.table_name) === -1) {
-						added.push(o.table_name);
-						list.push({ label: o.mod_name + "数量", value: "0", field: o.table_name });
-					}
-				}
-			}
-			this.dataScreen = list;
-			for (let i = 0; i < list.length; i++) {
-				let item = list[i];
+			this.dataScreen = businessList;
+			for (let i = 0; i < businessList.length; i++) {
+				let item = businessList[i];
 				this.$get("~/api/" + item.field + "/count").then((json) => {
 					if (json.result !== null) {
 						this.$set(this.dataScreen[i], "value", json.result);

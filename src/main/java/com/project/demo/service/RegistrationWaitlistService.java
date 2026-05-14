@@ -190,7 +190,7 @@ public class RegistrationWaitlistService {
                 "SELECT registration_information_id, source_table, source_id, registration_status, pay_state, examine_state, "
                         +
                         "enrolled_user, host_user, booth_name " +
-                        "FROM registration_information WHERE registration_information_id = ? FOR UPDATE",
+                        "FROM registration_information WHERE IFNULL(is_deleted, 0) = 0 AND registration_information_id = ? FOR UPDATE",
                 registrationId);
 
         if (rows.isEmpty()) {
@@ -321,7 +321,7 @@ public class RegistrationWaitlistService {
                 "SELECT registration_information_id, source_table, source_id, registration_status, waitlist_no, pay_state, "
                         +
                         "examine_state, enrolled_user, host_user, booth_name " +
-                        "FROM registration_information WHERE registration_information_id = ? FOR UPDATE",
+                        "FROM registration_information WHERE IFNULL(is_deleted, 0) = 0 AND registration_information_id = ? FOR UPDATE",
                 registrationId);
 
         if (rows.isEmpty()) {
@@ -403,7 +403,7 @@ public class RegistrationWaitlistService {
         fillAvailableSeats(boothId, capacity);
 
         int confirmedCount = countConfirmed(boothId);
-        boolean canConfirm = true;
+        boolean canConfirm = capacity <= 0 || confirmedCount < capacity || isConfirmedStatus(currentStatus);
         String nextPayState = keepOrResetPayState(currentPayState);
 
         if (canConfirm) {
@@ -567,7 +567,7 @@ public class RegistrationWaitlistService {
 
         Integer limit = toPositiveInt(registration.get("travel_confirmation_limit_times"), 1);
         Integer used = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM travel_confirmation WHERE source_table = ? AND source_id = ?",
+                "SELECT COUNT(*) FROM travel_confirmation WHERE IFNULL(is_deleted, 0) = 0 AND source_table = ? AND source_id = ?",
                 Integer.class,
                 SOURCE_TABLE_REGISTRATION,
                 registrationId);
@@ -629,7 +629,7 @@ public class RegistrationWaitlistService {
         }
 
         Integer pending = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM refund_request WHERE source_table = ? AND source_id = ? AND examine_state = ?",
+                "SELECT COUNT(*) FROM refund_request WHERE IFNULL(is_deleted, 0) = 0 AND source_table = ? AND source_id = ? AND examine_state = ?",
                 Integer.class,
                 SOURCE_TABLE_REGISTRATION,
                 registrationId,
@@ -641,7 +641,7 @@ public class RegistrationWaitlistService {
 
         Integer limit = toPositiveInt(registration.get("refund_request_limit_times"), 1);
         Integer used = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM refund_request WHERE source_table = ? AND source_id = ?",
+                "SELECT COUNT(*) FROM refund_request WHERE IFNULL(is_deleted, 0) = 0 AND source_table = ? AND source_id = ?",
                 Integer.class,
                 SOURCE_TABLE_REGISTRATION,
                 registrationId);
@@ -678,7 +678,7 @@ public class RegistrationWaitlistService {
                         "host_user, booth_name, booth_prices, user_name, users_mobile_phone, registration_status, waitlist_no, pay_state, examine_state, examine_reply, number_of_registrations, "
                         +
                         "travel_confirmation_limit_times, refund_request_limit_times " +
-                        "FROM registration_information WHERE registration_information_id = ? LIMIT 1",
+                        "FROM registration_information WHERE IFNULL(is_deleted, 0) = 0 AND registration_information_id = ? LIMIT 1",
                 registrationId);
 
         return rows.isEmpty() ? null : rows.get(0);
@@ -689,7 +689,7 @@ public class RegistrationWaitlistService {
                 "SELECT booth_information_id, booth_number, exhibitionconvention_number, exhibition_theme, host_user, "
                         +
                         "booth_name, booth_type, booth_prices, registration_information_limit_times " +
-                        "FROM booth_information WHERE booth_information_id = ? FOR UPDATE",
+                        "FROM booth_information WHERE IFNULL(is_deleted, 0) = 0 AND booth_information_id = ? FOR UPDATE",
                 boothId);
 
         return rows.isEmpty() ? null : rows.get(0);
@@ -699,7 +699,7 @@ public class RegistrationWaitlistService {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                 "SELECT registration_information_id, registration_status, waitlist_no, pay_state " +
                         "FROM registration_information " +
-                        "WHERE source_table = ? AND source_id = ? AND enrolled_user = ? " +
+                        "WHERE IFNULL(is_deleted, 0) = 0 AND source_table = ? AND source_id = ? AND enrolled_user = ? " +
                         "AND (registration_status = ? OR registration_status = ? OR registration_status = ? OR registration_status = ? OR registration_status IS NULL OR registration_status = '') "
                         +
                         "ORDER BY registration_information_id DESC LIMIT 1",
@@ -718,6 +718,7 @@ public class RegistrationWaitlistService {
         Integer count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM registration_information " +
                         "WHERE source_table = ? AND source_id = ? " +
+                        "AND IFNULL(is_deleted, 0) = 0 " +
                         "AND (registration_status = ? OR registration_status = ? OR registration_status IS NULL OR registration_status = '')",
                 Integer.class,
                 SOURCE_TABLE_BOOTH,
@@ -730,7 +731,7 @@ public class RegistrationWaitlistService {
     private int countWaitlist(Integer boothId) {
         Integer count = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM registration_information " +
-                        "WHERE source_table = ? AND source_id = ? AND registration_status = ? AND examine_state = ?",
+                        "WHERE IFNULL(is_deleted, 0) = 0 AND source_table = ? AND source_id = ? AND registration_status = ? AND examine_state = ?",
                 Integer.class,
                 SOURCE_TABLE_BOOTH,
                 boothId,
@@ -742,7 +743,7 @@ public class RegistrationWaitlistService {
     private Integer nextWaitlistNo(Integer boothId) {
         Integer next = jdbcTemplate.queryForObject(
                 "SELECT IFNULL(MAX(waitlist_no), 0) + 1 FROM registration_information " +
-                        "WHERE source_table = ? AND source_id = ? AND registration_status = ? AND examine_state = ?",
+                        "WHERE IFNULL(is_deleted, 0) = 0 AND source_table = ? AND source_id = ? AND registration_status = ? AND examine_state = ?",
                 Integer.class,
                 SOURCE_TABLE_BOOTH,
                 boothId,
@@ -773,7 +774,7 @@ public class RegistrationWaitlistService {
     private Integer promoteOneWaitlist(Integer boothId) {
         List<Map<String, Object>> waitRows = jdbcTemplate.queryForList(
                 "SELECT registration_information_id FROM registration_information " +
-                        "WHERE source_table = ? AND source_id = ? AND registration_status = ? AND examine_state = ? " +
+                        "WHERE IFNULL(is_deleted, 0) = 0 AND source_table = ? AND source_id = ? AND registration_status = ? AND examine_state = ? " +
                         "ORDER BY waitlist_time ASC, registration_information_id ASC " +
                         "LIMIT 1 FOR UPDATE",
                 SOURCE_TABLE_BOOTH,
@@ -802,6 +803,7 @@ public class RegistrationWaitlistService {
         jdbcTemplate.update(
                 "UPDATE registration_information SET waitlist_no = NULL, update_time = NOW() " +
                         "WHERE source_table = ? AND source_id = ? AND registration_status = ? " +
+                        "AND IFNULL(is_deleted, 0) = 0 " +
                         "AND (examine_state IS NULL OR examine_state <> ?)",
                 SOURCE_TABLE_BOOTH,
                 boothId,
@@ -809,7 +811,7 @@ public class RegistrationWaitlistService {
                 EXAMINE_APPROVED);
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                 "SELECT registration_information_id FROM registration_information " +
-                        "WHERE source_table = ? AND source_id = ? AND registration_status = ? AND examine_state = ? " +
+                        "WHERE IFNULL(is_deleted, 0) = 0 AND source_table = ? AND source_id = ? AND registration_status = ? AND examine_state = ? " +
                         "ORDER BY waitlist_time ASC, registration_information_id ASC FOR UPDATE",
                 SOURCE_TABLE_BOOTH,
                 boothId,
@@ -831,7 +833,7 @@ public class RegistrationWaitlistService {
         }
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT waitlist_no FROM registration_information WHERE registration_information_id = ? LIMIT 1",
+                "SELECT waitlist_no FROM registration_information WHERE IFNULL(is_deleted, 0) = 0 AND registration_information_id = ? LIMIT 1",
                 registrationId);
 
         return rows.isEmpty() ? null : toInt(rows.get(0).get("waitlist_no"));
@@ -866,7 +868,7 @@ public class RegistrationWaitlistService {
 
     private Integer findRegistrationIdByOrderNumber(String orderNumber) {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT registration_information_id FROM registration_information WHERE order_number = ? " +
+                "SELECT registration_information_id FROM registration_information WHERE IFNULL(is_deleted, 0) = 0 AND order_number = ? " +
                         "ORDER BY registration_information_id DESC LIMIT 1",
                 orderNumber);
 
@@ -1082,9 +1084,9 @@ public class RegistrationWaitlistService {
         }
 
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT registration_information_id, examine_state, registration_status, escalate_state, enrolled_user "
+                        "SELECT registration_information_id, examine_state, registration_status, escalate_state, enrolled_user "
                         +
-                        "FROM registration_information WHERE registration_information_id = ? FOR UPDATE",
+                        "FROM registration_information WHERE IFNULL(is_deleted, 0) = 0 AND registration_information_id = ? FOR UPDATE",
                 registrationId);
 
         if (rows.isEmpty()) {

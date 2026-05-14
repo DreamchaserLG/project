@@ -30,3 +30,7 @@ LOCAL_RUN.md
 *.tmp
 *.orig
 *.rej
+~$*.docx
+docs/*.docx
+docs/chapter5_system_implementation*.md
+tools/generate_chapter_docx.py

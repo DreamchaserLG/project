@@ -73,17 +73,18 @@ public class BusinessAccessService {
     }
 
     public String scopedWhere(String table, Actor actor) {
+        String visibleWhere = visibleBusinessWhere(table);
         if (actor == null || !actor.isLoggedIn()) {
             return "1 = 0";
         }
         if (actor.isAdmin()) {
-            return "";
+            return visibleWhere;
         }
         if (actor.isRegular()) {
             if ("exhibition_information".equals(table) || "booth_information".equals(table)) {
-                return "";
+                return visibleWhere;
             }
-            return scopedWhere(actor);
+            return combineWhere(visibleWhere, scopedWhere(actor));
         }
         if (!actor.isHost()) {
             return "1 = 0";
@@ -91,21 +92,21 @@ public class BusinessAccessService {
 
         Integer userId = actor.getUserId();
         if ("exhibition_information".equals(table)) {
-            return "host_user = " + userId;
+            return combineWhere(visibleWhere, "host_user = " + userId);
         }
         if ("booth_information".equals(table)) {
-            return boothHostWhere(userId);
+            return combineWhere(visibleWhere, boothHostWhere(userId));
         }
         if ("registration_information".equals(table)) {
-            return registrationHostWhere(userId);
+            return combineWhere(visibleWhere, registrationHostWhere(userId));
         }
         if ("travel_confirmation".equals(table)) {
-            return linkedToRegistrationHostWhere(userId);
+            return combineWhere(visibleWhere, linkedToRegistrationHostWhere(userId));
         }
         if ("refund_request".equals(table)) {
-            return linkedToRegistrationHostWhere(userId);
+            return combineWhere(visibleWhere, linkedToRegistrationHostWhere(userId));
         }
-        return "host_user = " + userId;
+        return combineWhere(visibleWhere, "host_user = " + userId);
     }
 
     public String requireViewAccess(String table, String idColumn, Integer id, Actor actor) {
@@ -179,7 +180,8 @@ public class BusinessAccessService {
             return null;
         }
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT * FROM `" + table + "` WHERE `" + idColumn + "` = ? LIMIT 1",
+                "SELECT * FROM `" + table + "` WHERE `" + idColumn + "` = ? "
+                        + "AND (" + visibleBusinessWhere(table) + ") LIMIT 1",
                 id);
         return rows.isEmpty() ? null : rows.get(0);
     }
@@ -223,6 +225,25 @@ public class BusinessAccessService {
                 || "booth_information".equals(table);
     }
 
+    private String visibleBusinessWhere(String table) {
+        if (isAllowedBusinessTable(table)) {
+            return "IFNULL(is_deleted, 0) = 0";
+        }
+        return "";
+    }
+
+    private String combineWhere(String left, String right) {
+        String l = safeString(left);
+        String r = safeString(right);
+        if (l.isEmpty()) {
+            return r;
+        }
+        if (r.isEmpty()) {
+            return l;
+        }
+        return "(" + l + ") AND (" + r + ")";
+    }
+
     private boolean isAllowedIdColumn(String idColumn) {
         return "registration_information_id".equals(idColumn)
                 || "travel_confirmation_id".equals(idColumn)
@@ -245,14 +266,14 @@ public class BusinessAccessService {
     }
 
     private String boothHostWhere(Integer userId) {
-        String exhibitionScope = "SELECT exhibitionconvention_number FROM exhibition_information WHERE host_user = " + userId;
+        String exhibitionScope = "SELECT exhibitionconvention_number FROM exhibition_information WHERE IFNULL(is_deleted, 0) = 0 AND host_user = " + userId;
         return "(host_user = " + userId
                 + " OR exhibitionconvention_number IN (" + exhibitionScope + "))";
     }
 
     private String registrationHostWhere(Integer userId) {
-        String exhibitionScope = "SELECT exhibitionconvention_number FROM exhibition_information WHERE host_user = " + userId;
-        String boothScope = "SELECT booth_number FROM booth_information WHERE " + boothHostWhere(userId);
+        String exhibitionScope = "SELECT exhibitionconvention_number FROM exhibition_information WHERE IFNULL(is_deleted, 0) = 0 AND host_user = " + userId;
+        String boothScope = "SELECT booth_number FROM booth_information WHERE IFNULL(is_deleted, 0) = 0 AND " + boothHostWhere(userId);
         return "(host_user = " + userId
                 + " OR exhibitionconvention_number IN (" + exhibitionScope + ")"
                 + " OR booth_number IN (" + boothScope + "))";
@@ -261,8 +282,8 @@ public class BusinessAccessService {
     private String linkedToRegistrationHostWhere(Integer userId) {
         String registrationScope = registrationHostWhere(userId);
         return "(host_user = " + userId
-                + " OR source_id IN (SELECT registration_information_id FROM registration_information WHERE " + registrationScope + ")"
-                + " OR order_number IN (SELECT order_number FROM registration_information WHERE " + registrationScope + "))";
+                + " OR source_id IN (SELECT registration_information_id FROM registration_information WHERE IFNULL(is_deleted, 0) = 0 AND " + registrationScope + ")"
+                + " OR order_number IN (SELECT order_number FROM registration_information WHERE IFNULL(is_deleted, 0) = 0 AND " + registrationScope + "))";
     }
 
     private String safeString(Object rawValue) {
