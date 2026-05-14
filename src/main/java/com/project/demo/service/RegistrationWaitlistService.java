@@ -878,10 +878,10 @@ public class RegistrationWaitlistService {
     private String buildOrderNumber(Object rawValue) {
         String value = safeString(rawValue);
         if (!value.isEmpty() && !"null".equalsIgnoreCase(value) && !"undefined".equalsIgnoreCase(value)
-                && !"nan".equalsIgnoreCase(value)) {
+                && !value.toLowerCase().contains("nan") && value.matches("\\d+")) {
             return value;
         }
-        return "BM" + System.currentTimeMillis() + ThreadLocalRandom.current().nextInt(1000, 9999);
+        return String.valueOf(System.currentTimeMillis()) + ThreadLocalRandom.current().nextInt(1000, 9999);
     }
 
     private void notifyRegistrationCreated(Integer enrolledUser, Integer hostUser, String boothName,

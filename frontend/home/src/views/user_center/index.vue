@@ -15,6 +15,7 @@
 
     <template v-else>
       <section class="profile_panel profile_summary">
+        <div class="profile_summary_left">
         <div class="profile_identity">
           <img class="profile_avatar" :src="avatarUrl" alt="avatar">
           <div class="profile_identity_text">
@@ -42,6 +43,8 @@
             <strong>{{ refundList.length }}</strong>
             <span>退款申请</span>
           </article>
+        </div>
+
         </div>
 
         <div class="profile_actions">
@@ -534,9 +537,17 @@ export default {
 
 .profile_summary {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.9fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 1rem;
   align-items: center;
+}
+
+.profile_summary_left {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(320px, 0.9fr);
+  gap: 1rem;
+  align-items: center;
+  min-width: 0;
 }
 
 .profile_identity {
@@ -628,7 +639,7 @@ export default {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(340px, 0.95fr);
   gap: 1.2rem;
-  align-items: start;
+  align-items: stretch;
 }
 
 .profile_section_head {
@@ -693,6 +704,7 @@ export default {
 .profile_record_card {
   display: flex;
   flex-direction: column;
+  height: 100%;
   min-width: 0;
 }
 
@@ -757,10 +769,14 @@ export default {
   font-size: 12px;
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 900px) {
   .profile_summary,
   .profile_grid,
   .profile_records {
+    grid-template-columns: 1fr;
+  }
+
+  .profile_summary_left {
     grid-template-columns: 1fr;
   }
 

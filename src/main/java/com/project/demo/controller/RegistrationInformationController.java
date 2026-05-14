@@ -513,10 +513,10 @@ public class RegistrationInformationController extends BaseController<Registrati
 
     private String buildOrderNumber(Object rawValue) {
         String value = normalize(rawValue);
-        if (!isBadValue(value)) {
+        if (!isBadValue(value) && value.matches("\\d+")) {
             return value;
         }
-        return "BM" + System.currentTimeMillis() + ThreadLocalRandom.current().nextInt(1000, 9999);
+        return String.valueOf(System.currentTimeMillis()) + ThreadLocalRandom.current().nextInt(1000, 9999);
     }
 
     private String defaultString(Object rawValue, String defaultValue) {
@@ -547,7 +547,7 @@ public class RegistrationInformationController extends BaseController<Registrati
         return normalized.isEmpty()
                 || "null".equalsIgnoreCase(normalized)
                 || "undefined".equalsIgnoreCase(normalized)
-                || "nan".equalsIgnoreCase(normalized);
+                || normalized.toLowerCase().contains("nan");
     }
 
     private Integer intValue(Object rawValue) {

@@ -376,16 +376,25 @@ const authFreePaths = new Set([
 	'/account/forgot',
 ]);
 
+const scrollToPageTop = () => {
+	window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+	document.documentElement.scrollTop = 0;
+	document.body.scrollTop = 0;
+};
+
 router.afterEach(() => {
 	let title = "会展管理系统-home";
 	document.title = title;
 	document.logo = "会展管理系统"
-	window.scrollTo(0, 0);
+	Vue.nextTick(() => {
+		scrollToPageTop();
+		setTimeout(scrollToPageTop, 0);
+	});
 })
 
 
 router.beforeEach((to, from, next) => {
-  window.scrollTo(0, 0);
+  scrollToPageTop();
   const storeToken = store?.state?.user?.token;
   const cacheToken = typeof $ !== "undefined" && $.db ? $.db.get("token") : "";
   const token = storeToken || cacheToken;
