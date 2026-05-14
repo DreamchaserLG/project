@@ -418,6 +418,10 @@ export default {
     to_form(url) {
       const cache_obj = { ...this.obj };
       delete cache_obj.booth_specificss;
+      delete cache_obj.order_number;
+      cache_obj.source_table = "booth_information";
+      cache_obj.source_id = this.obj.booth_information_id;
+      cache_obj.source_user_id = this.user.user_id;
       $.db.set("form", cache_obj);
       this.$router.push(url);
     },

@@ -521,9 +521,23 @@
 				let form = {
 																																																																																																																																																								};
 				return form;
-			},
+				},
 																		},
 		methods: {
+			makeOrderNumber() {
+				return String(Date.now()) + String(Math.floor(Math.random() * 9000) + 1000);
+			},
+			normalizeOrderNumber(value) {
+				const text = String(value || "").trim();
+				return /^\d+$/.test(text) && !text.toLowerCase().includes("nan") ? text : this.makeOrderNumber();
+			},
+			get_obj_check(param) {
+				return param && Number(param.registration_information_id) > 0 ? null : "新增报名不读取已有报名记录";
+			},
+			submit_before(param) {
+				param.order_number = this.normalizeOrderNumber(param.order_number);
+				return param;
+			},
 																																																																																																																																																																						formatDateValue(value) {
 		  const date = new Date(value);
 		  return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
@@ -840,7 +854,7 @@
             arrForm.push(key)
           }
           for (var i=0;i<arr.length;i++){
-            if (arr[i]!=='examine_state' && arr[i]!=='examine_reply' && arr[i] !== "create_by") {
+            if (arr[i]!=='examine_state' && arr[i]!=='examine_reply' && arr[i] !== "create_by" && arr[i] !== "order_number") {
               for (var j = 0; j < arrForm.length; j++) {
                 if (arrForm[j] === arr[i]) {
                   this.form[arrForm[j]] = form[arr[i]]
@@ -857,9 +871,10 @@
 			  }
 			  if(arr[i] === "source_user_id"){
 			  	this.form['source_user_id'] = form[arr[i]]
-			  }
+              }
             }
           }
+          this.form.order_number = this.normalizeOrderNumber(this.form.order_number);
         }
 																																																																
         $.db.del("form");

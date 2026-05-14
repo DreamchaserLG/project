@@ -8,6 +8,7 @@ import com.project.demo.service.BusinessAccessService;
 import com.project.demo.service.RegistrationInformationService;
 import com.project.demo.service.RegistrationWaitlistService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,16 +30,19 @@ public class RegistrationInformationController extends BaseController<Registrati
     private final RegistrationWaitlistService registrationWaitlistService;
     private final AuditLogService auditLogService;
     private final BusinessAccessService accessService;
+    private final JdbcTemplate jdbcTemplate;
 
     @Autowired
     public RegistrationInformationController(RegistrationInformationService service,
                                              RegistrationWaitlistService registrationWaitlistService,
                                              AuditLogService auditLogService,
-                                             BusinessAccessService accessService) {
+                                             BusinessAccessService accessService,
+                                             JdbcTemplate jdbcTemplate) {
         setService(service);
         this.registrationWaitlistService = registrationWaitlistService;
         this.auditLogService = auditLogService;
         this.accessService = accessService;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @RequestMapping("/get_list")
@@ -87,6 +91,7 @@ public class RegistrationInformationController extends BaseController<Registrati
             return error(30000, numberMessage);
         }
 
+        resolveBoothSource(paramMap, actor);
         if (isBoothRegistration(paramMap)) {
             Map<String, Object> result = registrationWaitlistService.createBoothRegistration(paramMap);
             if (!Boolean.TRUE.equals(result.get("ok"))) {
@@ -103,13 +108,6 @@ public class RegistrationInformationController extends BaseController<Registrati
         if (isBadValue(boothNumber)) {
             boothNumber = "AUTO-" + registrationInformation.getOrder_number();
             registrationInformation.setBooth_number(boothNumber);
-        }
-
-        Map<String, String> query = new HashMap<String, String>();
-        query.put("booth_number", boothNumber);
-        List<?> exists = service.selectBaseList(service.select(query, new HashMap<String, String>()));
-        if (!exists.isEmpty()) {
-            return error(30000, "展位编号不能重复");
         }
 
         this.addEntity(registrationInformation);
@@ -370,6 +368,55 @@ public class RegistrationInformationController extends BaseController<Registrati
         } else {
             putIfMissing(paramMap, "create_by", actor.getUserId());
         }
+    }
+
+    private void resolveBoothSource(Map<String, Object> paramMap, BusinessAccessService.Actor actor) {
+        if (isBoothRegistration(paramMap)) {
+            return;
+        }
+        String boothNumber = normalize(paramMap.get("booth_number"));
+        if (isBadValue(boothNumber)) {
+            return;
+        }
+
+        String exhibitionNumber = normalize(paramMap.get("exhibitionconvention_number"));
+        List<Map<String, Object>> rows;
+        if (!isBadValue(exhibitionNumber)) {
+            rows = jdbcTemplate.queryForList(
+                    "SELECT booth_information_id, booth_number, exhibitionconvention_number, exhibition_theme, host_user, booth_name, booth_type, booth_prices " +
+                            "FROM booth_information WHERE IFNULL(is_deleted, 0) = 0 AND booth_number = ? AND exhibitionconvention_number = ? " +
+                            "ORDER BY booth_information_id DESC LIMIT 1",
+                    boothNumber, exhibitionNumber);
+            if (rows.isEmpty()) {
+                rows = findActiveBoothByNumber(boothNumber);
+            }
+        } else {
+            rows = findActiveBoothByNumber(boothNumber);
+        }
+
+        if (rows.isEmpty()) {
+            return;
+        }
+
+        Map<String, Object> booth = rows.get(0);
+        paramMap.put("source_table", RegistrationWaitlistService.SOURCE_TABLE_BOOTH);
+        paramMap.put("source_id", booth.get("booth_information_id"));
+        putIfMissing(paramMap, "source_user_id", actor == null ? null : actor.getUserId());
+        paramMap.put("booth_number", booth.get("booth_number"));
+        paramMap.put("exhibitionconvention_number", booth.get("exhibitionconvention_number"));
+        paramMap.put("exhibition_theme", booth.get("exhibition_theme"));
+        paramMap.put("host_user", booth.get("host_user"));
+        paramMap.put("booth_name", booth.get("booth_name"));
+        paramMap.put("booth_type", booth.get("booth_type"));
+        paramMap.put("booth_prices", booth.get("booth_prices"));
+    }
+
+    private List<Map<String, Object>> findActiveBoothByNumber(String boothNumber) {
+        return jdbcTemplate.queryForList(
+                "SELECT booth_information_id, booth_number, exhibitionconvention_number, exhibition_theme, host_user, booth_name, booth_type, booth_prices " +
+                        "FROM booth_information WHERE IFNULL(is_deleted, 0) = 0 AND booth_number = ? " +
+                        "ORDER BY booth_information_id DESC LIMIT 1",
+                boothNumber);
     }
 
     private RegistrationInformation buildRegistrationEntity(Map<String, Object> paramMap, boolean isAdd) {
