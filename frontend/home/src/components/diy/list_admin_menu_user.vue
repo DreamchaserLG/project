@@ -65,19 +65,21 @@ export default {
 .profile_menu_list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.9rem;
+  gap: 12px;
+  min-width: 0;
 }
 
 .profile_menu_item {
   display: flex;
   align-items: center;
-  gap: 0.9rem;
-  min-height: 84px;
-  padding: 1rem 1.05rem;
-  border-radius: 20px;
+  gap: 14px;
+  min-width: 0;
+  min-height: 76px;
+  padding: 14px;
+  border-radius: 12px;
   background: linear-gradient(180deg, #ffffff, #f8fbfd);
   border: 1px solid rgba(15, 54, 80, 0.08);
-  box-shadow: 0 12px 24px rgba(16, 34, 51, 0.05);
+  box-shadow: 0 6px 18px rgba(16, 34, 51, 0.05);
   color: var(--color_text) !important;
   transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
@@ -97,9 +99,9 @@ export default {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   background: rgba(15, 95, 108, 0.09);
   color: var(--color_primary);
   font-size: 1rem;
@@ -120,13 +122,25 @@ export default {
 
 .profile_menu_meta strong {
   color: inherit;
-  font-size: 0.98rem;
+  font-size: 15px;
   font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .profile_menu_meta small {
   color: var(--color_text_soft);
   line-height: 1.55;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
+@media (max-width: 560px) {
+  .profile_menu_list {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
