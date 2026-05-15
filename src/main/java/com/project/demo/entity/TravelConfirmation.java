@@ -99,6 +99,18 @@ public class TravelConfirmation implements Serializable {
 	
 
 
+    // 逻辑删除
+    @TableField(value = "is_deleted")
+    private Integer is_deleted;
+
+    // 逻辑删除时间
+    @TableField(value = "deleted_time")
+    private Timestamp deleted_time;
+
+    // 逻辑删除原因
+    @TableField(value = "deleted_reason")
+    private String deleted_reason;
+
                                         
 
 

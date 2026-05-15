@@ -1,6 +1,7 @@
 package com.project.demo.service;
 
 import com.project.demo.entity.AccessToken;
+import com.project.demo.constant.LogicalDeleteConfig;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -226,8 +227,8 @@ public class BusinessAccessService {
     }
 
     private String visibleBusinessWhere(String table) {
-        if (isAllowedBusinessTable(table)) {
-            return "IFNULL(is_deleted, 0) = 0";
+        if (LogicalDeleteConfig.hasLogicalDelete(table)) {
+            return LogicalDeleteConfig.visibleWhere();
         }
         return "";
     }
