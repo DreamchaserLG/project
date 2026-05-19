@@ -24,17 +24,8 @@
 						<el-option value="未通过">未通过</el-option>
 					</el-select>
 				</el-form-item>
-			</el-col>
+		</el-col>
 			<el-col :xs="24" :sm="24" :lg="8" class="el_form_search_wrap">
-				<el-form-item label="越级状态">
-					<el-select v-model="query.escalate_state">
-						<el-option value="">全部</el-option>
-						<el-option value="已越级">已越级</el-option>
-						<el-option value="未越级">未越级</el-option>
-					</el-select>
-				</el-form-item>
-			</el-col>
-				<el-col :xs="24" :sm="24" :lg="8" class="el_form_search_wrap">
 					<el-form-item label="支付状态">
 						<el-select v-model="query.pay_state">
 							<el-option value="">全部</el-option>
@@ -166,24 +157,18 @@
 					<span v-else-if="scope.row['examine_state'] == '未通过'" style="color: gray;">未通过</span>
 				</template>
 			</el-table-column>
-			<el-table-column label="越级状态" prop="escalate_state" min-width="120">
-				<template slot-scope="scope">
-					<el-tag v-if="scope.row['escalate_state'] === '已越级'" type="warning" size="mini" effect="dark">
-						<i class="el-icon-top"></i> 已越级
-					</el-tag>
-					<span v-else style="color: #C0C4CC;">-</span>
-				</template>
-			</el-table-column>
-			<el-table-column label="越级原因" prop="escalate_reason" min-width="200">
-				<template slot-scope="scope">
-					<span v-if="scope.row['escalate_reason']">{{ scope.row['escalate_reason'] }}</span>
-					<span v-else style="color: #C0C4CC;">-</span>
-				</template>
-			</el-table-column>
-			<el-table-column label="审核回复" prop="examine_reply" min-width="200">
+		<el-table-column label="审核回复" prop="examine_reply" min-width="200">
 			</el-table-column>
 
-			<el-table-column label="支付状态" prop="pay_state" min-width="100">
+			<el-table-column label="支付状态" prop="pay_state" min-width="150">
+				<template slot-scope="scope">
+					<el-tag :type="paymentTagType(scope.row.pay_state)" size="mini">
+						{{ scope.row.pay_state || '-' }}
+					</el-tag>
+					<div class="status_hint" v-if="paymentCountdown(scope.row)">
+						剩余支付时间：{{ paymentCountdown(scope.row) }}
+					</div>
+				</template>
 			</el-table-column>
 
 			<el-table-column label="支付类型" prop="pay_type" min-width="100">
@@ -435,7 +420,6 @@
 								"order_number": "",
 																			"user_name": "",
 														"examine_state":"",
-					"escalate_state":"",
 					"pay_state":"",
 					"login_time": "",
 					"create_time": "",
@@ -476,6 +460,9 @@
 				// 存储展开的行
 				expandKeys: [],
 				prevSelection: [],
+				now_ts: Date.now(),
+				countdown_timer: null,
+				expired_refreshing: false,
 			}
 		},
 		methods: {
@@ -511,12 +498,55 @@
 				}
 				return row.registration_status;
 			},
-			statusTagType(row) {
-				let status = this.normalizeRegistrationStatus(row);
-				if (status === "已报名") {
+			paymentTagType(payState) {
+				if (payState === "已支付") {
 					return "success";
 				}
-				if (status === "候补中") {
+				if (payState === "未支付") {
+					return "warning";
+				}
+				if (payState === "超时未支付" || payState === "已退款") {
+					return "info";
+				}
+				if (payState === "退款中") {
+					return "danger";
+				}
+				return "";
+			},
+			expireTimeValue(row) {
+				if (!row || !row.expire_time) {
+					return 0;
+				}
+				if (typeof row.expire_time === "number") {
+					return row.expire_time;
+				}
+				const normalized = String(row.expire_time).replace(/-/g, "/");
+				const value = new Date(normalized).getTime();
+				return Number.isNaN(value) ? 0 : value;
+			},
+			paymentCountdown(row) {
+				if (!row || row.pay_state !== "未支付" || this.normalizeRegistrationStatus(row) !== "待支付") {
+					return "";
+				}
+				const expireAt = this.expireTimeValue(row);
+				if (!expireAt) {
+					return "";
+				}
+				const remain = expireAt - this.now_ts;
+				if (remain <= 0) {
+					return "已超时";
+				}
+				const totalMinutes = Math.ceil(remain / 60000);
+				const hours = Math.floor(totalMinutes / 60);
+				const minutes = totalMinutes % 60;
+				return hours + "小时" + minutes + "分钟";
+			},
+			statusTagType(row) {
+				let status = this.normalizeRegistrationStatus(row);
+				if (status === "已报名" || status === "报名成功") {
+					return "success";
+				}
+				if (status === "待支付" || status === "候补中" || status === "候补审核中") {
 					return "warning";
 				}
 				if (status === "已取消") {
@@ -526,6 +556,9 @@
 			},
 			statusHint(row) {
 				const status = this.normalizeRegistrationStatus(row);
+				if (status === "待支付" && row.pay_state === "未支付") {
+					return this.paymentCountdown(row) ? "请在倒计时结束前完成支付" : "待支付";
+				}
 				if (status === "候补中" && row.examine_state === "已通过" && row.waitlist_no) {
 					return "候补第 " + row.waitlist_no + " 位";
 				}
@@ -547,29 +580,33 @@
 				return this.get_user_enrolled_user(row.enrolled_user) || row.user_name || "-";
 			},
 			canPay(row) {
-				return this.normalizeRegistrationStatus(row) === "已报名"
+				const status = this.normalizeRegistrationStatus(row);
+				return (status === "待支付" || status === "已报名" || status === "报名成功" || status === "候补中")
 					&& row.pay_state === "未支付"
 					&& row.examine_state !== "未通过";
 			},
 			canTravel(row) {
-				return this.normalizeRegistrationStatus(row) === "已报名"
+				const status = this.normalizeRegistrationStatus(row);
+				return (status === "已报名" || status === "报名成功")
 					&& row.examine_state === "已通过"
 					&& row.pay_state === "已支付"
 					&& !row.travel_confirmation_limit
 					&& !row.travel_confirmation_status_limit;
 			},
 			canRefund(row) {
-				return this.normalizeRegistrationStatus(row) === "已报名"
+				const status = this.normalizeRegistrationStatus(row);
+				return (status === "已报名" || status === "报名成功")
 					&& row.examine_state === "已通过"
 					&& row.pay_state === "已支付"
 					&& !row.refund_request_limit
 					&& !row.refund_request_status_limit;
 			},
 			canCancel(row) {
-				if (this.normalizeRegistrationStatus(row) === "候补中") {
+				const status = this.normalizeRegistrationStatus(row);
+				if (status === "待支付" || status === "候补中" || status === "候补审核中") {
 					return true;
 				}
-				return this.normalizeRegistrationStatus(row) === "已报名" && row.pay_state !== "退款中";
+				return (status === "已报名" || status === "报名成功") && row.pay_state !== "退款中";
 			},
 			cancelRegistration(row) {
 				this.$confirm(
@@ -687,6 +724,7 @@
 						_this.$set(item,'registration_status','已报名');
 					}
 				})
+				_this.expired_refreshing = false;
 
 												_this.list.map((item) => {
 					let param = {
@@ -732,6 +770,20 @@
 				})
 																																																																																																},
 
+			refreshExpiredPendingPayments() {
+				const hasExpired = this.list.some(item => {
+					return item
+						&& item.pay_state === "未支付"
+						&& this.normalizeRegistrationStatus(item) === "待支付"
+						&& this.expireTimeValue(item) > 0
+						&& this.expireTimeValue(item) <= this.now_ts;
+				});
+				if (hasExpired && !this.expired_refreshing) {
+					this.expired_refreshing = true;
+					this.get_list();
+				}
+			},
+
 			get_list_before(param){
 				var user_group = this.user.user_group;
 				var sqlwhere = "(";
@@ -743,20 +795,10 @@
 					sqlwhere+= "enrolled_user = " + this.user.user_id + " or ";
 				}
 				sqlwhere = sqlwhere.substr(0,sqlwhere.length-4);
-				sqlwhere += ")";
-				}
+			sqlwhere += ")";
+			}
 
-				if(param["escalate_state"] === "未越级"){
-					delete param["escalate_state"];
-					var escalateWhere = "(escalate_state IS NULL OR escalate_state = '')";
-					if(sqlwhere.length > 1){
-						sqlwhere = sqlwhere + " AND " + escalateWhere;
-					}else{
-						sqlwhere = escalateWhere;
-					}
-				}
-
-				if(sqlwhere.length > 1){
+			if(sqlwhere.length > 1){
 					param["sqlwhere"] = sqlwhere;
 				}
 				return param;
@@ -927,6 +969,17 @@
 															this.get_list_user_host_user();
 														this.get_list_user_enrolled_user();
 																	},
+		mounted() {
+			this.countdown_timer = setInterval(() => {
+				this.now_ts = Date.now();
+				this.refreshExpiredPendingPayments();
+			}, 60000);
+		},
+		beforeDestroy() {
+			if (this.countdown_timer) {
+				clearInterval(this.countdown_timer);
+			}
+		},
 		computed: {
 			hasExtraData() {
 				return this.list.some(item => item.extra && item.extra.trim() !== '');

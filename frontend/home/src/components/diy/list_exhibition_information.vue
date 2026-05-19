@@ -18,7 +18,7 @@
         <div class="expo_meta">
           <span>举办时间：{{ formatDate(item.event_time) }}</span>
           <span>举办地点：{{ item.event_venue_name || "待更新" }}</span>
-          <span>主办用户：{{ item.host_user || "-" }}</span>
+          <span>主办用户：{{ getHostUserName(item.host_user) }}</span>
         </div>
         <div class="expo_footer">
           <span class="expo_link">查看详情</span>
@@ -49,7 +49,11 @@ export default {
     return {
       localList: [],
       fallbackImage: "/img/default.png",
+      hostUserList: [],
     };
+  },
+  created() {
+    this.loadHostUserList();
   },
   watch: {
     list: {
@@ -60,6 +64,22 @@ export default {
     },
   },
   methods: {
+    async loadHostUserList() {
+      try {
+        const json = await this.$get("~/api/user/get_list?user_group=主办用户");
+        if (json.result && json.result.list) {
+          this.hostUserList = json.result.list;
+        }
+      } catch (e) {}
+    },
+    getHostUserName(id) {
+      if (!id) return "-";
+      const user = this.hostUserList.find((u) => u.user_id === id);
+      if (user) {
+        return user.nickname ? user.nickname + "-" + user.username : user.username;
+      }
+      return String(id);
+    },
     getImageSrc(path) {
       return path ? this.$fullUrl(path) : this.fallbackImage;
     },

@@ -116,10 +116,11 @@ public class RegistrationInformationController extends BaseController<Registrati
         Map<String, Object> result = new HashMap<String, Object>();
         result.put("registration_information_id", registrationId);
         result.put("order_number", registrationInformation.getOrder_number());
-        result.put("registration_status", RegistrationWaitlistService.STATUS_CONFIRMED);
+        result.put("registration_status", RegistrationWaitlistService.STATUS_PENDING_PAYMENT);
         result.put("waitlist_no", null);
-        result.put("need_pay", false);
-        result.put("message", "报名已提交，待管理员或主办方审核");
+        result.put("need_pay", true);
+        result.put("expire_hours", 24);
+        result.put("message", "报名已提交，请在24小时内完成支付");
         auditLogService.record(request, intValue(paramMap.get("create_by")), "报名", "registration_information",
                 registrationId, "成功", "新增报名记录");
         return success(result);
@@ -184,10 +185,14 @@ public class RegistrationInformationController extends BaseController<Registrati
             if (paymentMessage != null) {
                 return error(30000, paymentMessage);
             }
-            String message = registrationWaitlistService.validatePaymentAllowed(registrationId);
-            if (message != null) {
-                return error(30000, message);
+            Map<String, Object> result = registrationWaitlistService.markPaymentSuccess(
+                    registrationId,
+                    stringValue(paramMap.get("pay_type"))
+            );
+            if (!Boolean.TRUE.equals(result.get("ok"))) {
+                return error(30000, String.valueOf(result.get("message")));
             }
+            return success(result);
         }
 
         RegistrationInformation registrationInformation = buildRegistrationEntity(paramMap, false);
@@ -287,6 +292,7 @@ public class RegistrationInformationController extends BaseController<Registrati
     public String updatePayState(Long id, String newState, HttpServletRequest request) throws IOException {
         if (!RegistrationWaitlistService.PAY_UNPAID.equals(newState)
                 && !RegistrationWaitlistService.PAY_PAID.equals(newState)
+                && !RegistrationWaitlistService.PAY_TIMEOUT.equals(newState)
                 && !RegistrationWaitlistService.PAY_REFUNDING.equals(newState)
                 && !RegistrationWaitlistService.PAY_REFUNDED.equals(newState)) {
             return "非法的支付状态";
@@ -304,22 +310,11 @@ public class RegistrationInformationController extends BaseController<Registrati
         }
 
         if (RegistrationWaitlistService.PAY_PAID.equals(newState)) {
-            String message = registrationWaitlistService.validatePaymentAllowed(id.intValue());
-            if (message != null) {
-                return message;
-            }
+            Map<String, Object> result = registrationWaitlistService.markPaymentSuccess(id.intValue(), "");
+            return String.valueOf(result.get("message"));
         }
 
-        Map<String, String> queryMap = new HashMap<String, String>();
-        queryMap.put("registration_information_id", String.valueOf(id));
-        RegistrationInformation registrationInformation = service.findOne(queryMap);
-        if (registrationInformation == null) {
-            return "支付失败：报名记录不存在";
-        }
-
-        registrationInformation.setPay_state(newState);
-        this.setEntity(queryMap, new HashMap<String, String>(), registrationInformation);
-        return "支付成功";
+        return "不允许手动回写支付状态，请通过支付成功入口更新";
     }
 
     private String validateRegistrationPeople(Object rawValue) {
@@ -459,6 +454,10 @@ public class RegistrationInformationController extends BaseController<Registrati
         }
         registrationInformation.setPay_state(isAdd ? RegistrationWaitlistService.PAY_UNPAID : stringValue(paramMap.get("pay_state")));
         registrationInformation.setPay_type(stringValue(paramMap.get("pay_type")));
+        registrationInformation.setRefund_status(stringValue(paramMap.get("refund_status")));
+        if (isAdd) {
+            registrationInformation.setExpire_time(new java.sql.Timestamp(System.currentTimeMillis() + 24L * 60L * 60L * 1000L));
+        }
         registrationInformation.setTravel_confirmation_limit_times(defaultString(paramMap.get("travel_confirmation_limit_times"), "1"));
         registrationInformation.setRefund_request_limit_times(defaultString(paramMap.get("refund_request_limit_times"), "1"));
         registrationInformation.setExtra(stringValue(paramMap.get("extra")));
@@ -467,7 +466,7 @@ public class RegistrationInformationController extends BaseController<Registrati
         registrationInformation.setSource_user_id(intValue(paramMap.get("source_user_id")));
         String registrationStatus = stringValue(paramMap.get("registration_status"));
         if (isAdd) {
-            registrationInformation.setRegistration_status(RegistrationWaitlistService.STATUS_CONFIRMED);
+            registrationInformation.setRegistration_status(RegistrationWaitlistService.STATUS_PENDING_PAYMENT);
         } else if (isValidRegistrationStatus(registrationStatus)) {
             registrationInformation.setRegistration_status(registrationStatus);
         }
@@ -479,8 +478,10 @@ public class RegistrationInformationController extends BaseController<Registrati
     private boolean isValidRegistrationStatus(String registrationStatus) {
         return RegistrationWaitlistService.STATUS_CONFIRMED.equals(registrationStatus)
                 || RegistrationWaitlistService.STATUS_CONFIRMED_LEGACY.equals(registrationStatus)
+                || RegistrationWaitlistService.STATUS_PENDING_PAYMENT.equals(registrationStatus)
                 || RegistrationWaitlistService.STATUS_WAITLIST.equals(registrationStatus)
                 || RegistrationWaitlistService.STATUS_WAITLIST_REVIEW.equals(registrationStatus)
+                || RegistrationWaitlistService.STATUS_WAITLIST_FAILED.equals(registrationStatus)
                 || RegistrationWaitlistService.STATUS_CANCELLED.equals(registrationStatus);
     }
 

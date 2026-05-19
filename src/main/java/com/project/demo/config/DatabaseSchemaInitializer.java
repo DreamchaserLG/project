@@ -22,6 +22,7 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
         for (String table : LogicalDeleteConfig.tables()) {
             ensureLogicalDeleteColumns(table);
         }
+        ensureRegistrationStateColumns();
     }
 
     private void ensureLogicalDeleteColumns(String table) {
@@ -35,6 +36,21 @@ public class DatabaseSchemaInitializer implements ApplicationRunner {
         addColumnIfMissing(table, LogicalDeleteConfig.DELETED_REASON_COLUMN,
                 "`deleted_reason` varchar(500) DEFAULT '' COMMENT '逻辑删除原因'");
         addIndexIfMissing(table, "idx_" + table + "_is_deleted", "`is_deleted`");
+    }
+
+    private void ensureRegistrationStateColumns() {
+        String table = "registration_information";
+        if (!tableExists(table)) {
+            return;
+        }
+        addColumnIfMissing(table, "expire_time",
+                "`expire_time` datetime DEFAULT NULL COMMENT '支付过期时间'");
+        addColumnIfMissing(table, "payment_time",
+                "`payment_time` datetime DEFAULT NULL COMMENT '支付时间'");
+        addColumnIfMissing(table, "refund_status",
+                "`refund_status` varchar(32) DEFAULT NULL COMMENT '退款状态'");
+        addIndexIfMissing(table, "idx_registration_payment_expire",
+                "`pay_state`, `registration_status`, `expire_time`");
     }
 
     private boolean tableExists(String table) {

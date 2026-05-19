@@ -168,19 +168,18 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="越级状态" prop="escalate_state" min-width="120">
-            <template slot-scope="scope">
-              <span v-if="scope.row['escalate_state'] === '已越级'" style="color: #E6A23C;">
-                <i class="el-icon-top"></i> 已越级
-              </span>
-              <span v-else style="color: #C0C4CC;">-</span>
-            </template>
-          </el-table-column>
-
-                  <el-table-column label="审核回复" prop="examine_reply">
+          <el-table-column label="审核回复" prop="examine_reply">
           </el-table-column>
         
-                  <el-table-column label="支付状态" prop="pay_state">
+                  <el-table-column label="支付状态" prop="pay_state" min-width="150">
+            <template slot-scope="scope">
+              <el-tag :type="paymentTagType(scope.row.pay_state)" size="mini">
+                {{ scope.row.pay_state || '-' }}
+              </el-tag>
+              <div class="status_hint" v-if="paymentCountdown(scope.row)">
+                剩余支付时间：{{ paymentCountdown(scope.row) }}
+              </div>
+            </template>
           </el-table-column>
 
           <el-table-column label="支付类型" prop="pay_type">
@@ -257,12 +256,6 @@
 												<el-button class="el-button el-button--small is-plain el-button--warning" style="margin: 5px !important;" size="small" @click="cancelRegistration(scope.row)" v-if="canCancel(scope.row)">
 			<span>{{ (normalizeRegistrationStatus(scope.row) === '候补中' || normalizeRegistrationStatus(scope.row) === '候补审核中') ? '取消候补' : '取消报名' }}</span>
 		</el-button>
-								<el-button class="el-button el-button--small is-plain el-button--danger" style="margin: 5px !important;" size="small" @click="escalateToAdmin(scope.row)" v-if="canEscalate(scope.row)">
-			<span>申请越级审核</span>
-		</el-button>
-											  	<span v-if="scope.row.escalate_state === '已越级'" style="color: #E6A23C; font-size: 12px; margin-left: 4px;">
-			<i class="el-icon-warning"></i> 已越级至管理员
-		</span>
                                             		  		  		  	<el-button class="el-button el-button--small is-plain el-button--default" style="margin: 5px !important;" size="small" @click="changeSigning(scope.row, scope.$index)" v-if="$check_option('/registration_information/table', 'examine')  ">
 		  		<span>审核</span>
 		  	</el-button>
@@ -429,6 +422,9 @@
 				// 存储展开的行
 				expandKeys: [],
         prevSelection: [],
+        now_ts: Date.now(),
+        countdown_timer: null,
+        expired_refreshing: false,
       }
     },
     methods: {
@@ -445,10 +441,56 @@
         }
         return row.registration_status;
       },
+      paymentTagType(payState) {
+        if (payState === "已支付") {
+          return "success";
+        }
+        if (payState === "未支付") {
+          return "warning";
+        }
+        if (payState === "超时未支付" || payState === "已退款") {
+          return "info";
+        }
+        if (payState === "退款中") {
+          return "danger";
+        }
+        return "";
+      },
+      expireTimeValue(row) {
+        if (!row || !row.expire_time) {
+          return 0;
+        }
+        if (typeof row.expire_time === "number") {
+          return row.expire_time;
+        }
+        const normalized = String(row.expire_time).replace(/-/g, "/");
+        const value = new Date(normalized).getTime();
+        return Number.isNaN(value) ? 0 : value;
+      },
+      paymentCountdown(row) {
+        if (!row || row.pay_state !== "未支付" || this.normalizeRegistrationStatus(row) !== "待支付") {
+          return "";
+        }
+        const expireAt = this.expireTimeValue(row);
+        if (!expireAt) {
+          return "";
+        }
+        const remain = expireAt - this.now_ts;
+        if (remain <= 0) {
+          return "已超时";
+        }
+        const totalMinutes = Math.ceil(remain / 60000);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        return hours + "小时" + minutes + "分钟";
+      },
       statusTagType(row) {
         let status = this.normalizeRegistrationStatus(row);
         if (status === "报名成功") {
           return "success";
+        }
+        if (status === "待支付") {
+          return "warning";
         }
         if (status === "候补中" || status === "候补审核中") {
           return "warning";
@@ -460,6 +502,9 @@
       },
       statusHint(row) {
         const status = this.normalizeRegistrationStatus(row);
+        if (status === "待支付" && row.pay_state === "未支付") {
+          return this.paymentCountdown(row) ? "请在倒计时结束前完成支付" : "待支付";
+        }
         if (status === "候补中" && row.examine_state === "已通过" && row.waitlist_no) {
           return "当前候补第 " + row.waitlist_no + " 位";
         }
@@ -476,25 +521,24 @@
       },
       canPay(row) {
         const status = this.normalizeRegistrationStatus(row);
-        return (status === "报名成功" || status === "候补审核中" || status === "候补中")
+        return (status === "待支付" || status === "报名成功" || status === "候补审核中" || status === "候补中")
           && row.pay_state === "未支付"
           && row.examine_state !== "未通过";
       },
       canTravel(row) {
         return this.normalizeRegistrationStatus(row) === "报名成功"
-          && row.examine_state === "已通过"
+          && row.pay_state === "已支付"
           && !row.travel_confirmation_limit
           && !row.travel_confirmation_status_limit;
       },
       canOpenTravel(row) {
         return row
           && this.normalizeRegistrationStatus(row) === "报名成功"
-          && row.examine_state === "已通过"
+          && row.pay_state === "已支付"
           && (!!row.travel_confirmation_id || this.canTravel(row));
       },
       canRefund(row) {
         return this.normalizeRegistrationStatus(row) === "报名成功"
-          && row.examine_state === "已通过"
           && row.pay_state === "已支付"
           && !row.refund_request_limit
           && !row.refund_request_status_limit;
@@ -515,8 +559,11 @@
         if (this.normalizeRegistrationStatus(row) === "已取消") {
           return "已取消的报名不能进行行程确认";
         }
-        if (this.normalizeRegistrationStatus(row) !== "报名成功" || row.examine_state !== "已通过") {
+        if (this.normalizeRegistrationStatus(row) !== "报名成功") {
           return "当前报名尚未审核通过，无法进行行程确认";
+        }
+        if (row.pay_state !== "已支付") {
+          return "支付完成后才能进行行程确认";
         }
         if (row.travel_confirmation_limit || row.travel_confirmation_status_limit) {
           return "当前报名记录的行程确认次数已达上限";
@@ -535,9 +582,6 @@
         }
         if (this.normalizeRegistrationStatus(row) !== "报名成功") {
           return "当前报名状态不能申请退款";
-        }
-        if (row.examine_state !== "已通过") {
-          return "报名审核通过后才能申请退款";
         }
         if (row.pay_state !== "已支付") {
           return "支付成功后才能申请退款";
@@ -612,6 +656,9 @@
       },
       canCancel(row) {
         const status = this.normalizeRegistrationStatus(row);
+        if (status === "待支付") {
+          return true;
+        }
         if (status === "候补中" || status === "候补审核中") {
           return true;
         }
@@ -622,33 +669,6 @@
           return status === "报名成功" && row.pay_state !== "已支付";
         }
         return status === "报名成功";
-      },
-      canEscalate(row) {
-        var status = this.normalizeRegistrationStatus(row);
-        return status !== "已取消"
-          && row.examine_state === "未通过"
-          && row.escalate_state !== "已越级";
-      },
-      escalateToAdmin(row) {
-        var _this = this;
-        this.$prompt("请填写越级审核原因（可选）", "申请越级审核", {
-          confirmButtonText: "提交申请",
-          cancelButtonText: "取消",
-          inputPlaceholder: "主办用户审核未通过，申请管理员重新审核",
-          inputValue: "主办用户审核未通过，申请管理员重新审核",
-          type: "warning"
-        }).then(function(ref) {
-          _this.$post("~/api/registration/waitlist/escalate/" + row.registration_information_id, {
-            reason: ref.value || "主办用户审核未通过，申请管理员重新审核"
-          }, function(json) {
-            if (json && json.result) {
-              _this.$toast(json.result.message || "申请成功", "success");
-              _this.get_list();
-            } else if (json && json.error) {
-              _this.$toast(json.error.message, "danger");
-            }
-          });
-        }).catch(function() {});
       },
       cancelRegistration(row) {
         this.$confirm(
@@ -760,6 +780,7 @@
 						_this.$set(item,'registration_status','报名成功');
 					}
 				})
+        _this.expired_refreshing = false;
 			      
 				        		  			  	_this.list.map((item) => {
           _this.loadRelatedRecord(
@@ -941,11 +962,35 @@
 		      deleteRow(index, rows) {
         rows.splice(index, 1);
       },
+      refreshExpiredPendingPayments() {
+        const hasExpired = this.list.some(item => {
+          return item
+            && item.pay_state === "未支付"
+            && this.normalizeRegistrationStatus(item) === "待支付"
+            && this.expireTimeValue(item) > 0
+            && this.expireTimeValue(item) <= this.now_ts;
+        });
+        if (hasExpired && !this.expired_refreshing) {
+          this.expired_refreshing = true;
+          this.get_list();
+        }
+      },
           },
 	    created() {
-                                                                                                                                                                                                      this.get_list_user_host_user();
-                                                                                                                                                                          this.get_list_user_enrolled_user();
-                                                                                                                                                                                                                                                                },
+                                                                                                                                                                                                       this.get_list_user_host_user();
+                                                                                                                                                                           this.get_list_user_enrolled_user();
+                                                                                                                                                                                                                                                                 },
+    mounted() {
+      this.countdown_timer = setInterval(() => {
+        this.now_ts = Date.now();
+        this.refreshExpiredPendingPayments();
+      }, 60000);
+    },
+    beforeDestroy() {
+      if (this.countdown_timer) {
+        clearInterval(this.countdown_timer);
+      }
+    },
     computed: {
 			hasExtraData() {
 				return this.list.some(item => item.extra && item.extra.trim() !== '');

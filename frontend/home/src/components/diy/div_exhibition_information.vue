@@ -158,7 +158,8 @@ export default {
       return this.excerpt(this.obj.fee_standards || this.obj.schedule_t || this.obj.event_venue_name, 140);
     },
     statusClass() {
-      if (String(this.obj.exhibition_status || "").includes("结束")) {
+      const status = String(this.obj.exhibition_status || "");
+      if (status.includes("结束") || status.includes("已下架")) {
         return "is-muted";
       }
       return "is-primary";

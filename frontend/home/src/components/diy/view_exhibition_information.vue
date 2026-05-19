@@ -241,7 +241,7 @@
 
 
 																																												// 会展状态选项列表
-				list_exhibition_status: ['报名中','进行中','已下架'],
+				list_exhibition_status: ['报名中','进行中','已下架','正在进行中'],
 																					// 用户列表
 				list_user_host_user: [],
 						// 用户组

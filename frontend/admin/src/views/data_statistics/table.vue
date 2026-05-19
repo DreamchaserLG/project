@@ -65,37 +65,17 @@
 							{{ scope.row["statistical_results"] }}
 									</template>
 					</el-table-column>
-					<el-table-column prop="host_user" @sort-change="$sortChange" label="主办用户" 				v-if="$check_field('get','host_user')" min-width="300">
-						<template slot-scope="scope">
-					{{ get_user_host_user(scope.row['host_user']) }}
-				</template>
-					</el-table-column>
-	
-			<el-table-column prop="extra" @sort-change="$sortChange" label="信息" min-width="300" v-if="hasExtraData" >
+
+		<el-table-column prop="extra" @sort-change="$sortChange" label="信息" min-width="300" v-if="hasExtraData" >
 				<template slot-scope="scope">
 					<div v-for="(value, key) in JSON.parse(scope.row.extra || '{}')" :key="key">{{ key }}：{{ value }}</div>
 				</template>
 			</el-table-column>
-            <el-table-column sortable prop="create_time" label="创建时间" min-width="200">
-                <template slot-scope="scope">
-                	{{ $toTime(scope.row["create_time"],"yyyy-MM-dd hh:mm:ss") }}
-                </template>
-            </el-table-column>
-
-			<el-table-column sortable prop="update_time" label="更新时间" min-width="200">
-                <template slot-scope="scope">
-                	{{ $toTime(scope.row["update_time"],"yyyy-MM-dd hh:mm:ss") }}
-                </template>
-			</el-table-column>
 
 
 
-
-
-
-
-			<el-table-column label="操作" min-width="200" v-if="$check_action('/data_statistics/table','set') || $check_action('/data_statistics/view','set') || $check_action('/data_statistics/view','get')
-						" >
+		<el-table-column label="操作" min-width="200" v-if="$check_action('/data_statistics/table','set') || $check_action('/data_statistics/view','set') || $check_action('/data_statistics/view','get')
+					" >
 
 
 				<template slot-scope="scope">

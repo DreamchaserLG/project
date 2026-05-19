@@ -89,6 +89,15 @@ public class RegistrationInformation implements Serializable {
     @TableField(value = "pay_type")
     private String pay_type;
 
+    @TableField(value = "payment_time")
+    private Timestamp payment_time;
+
+    @TableField(value = "refund_status")
+    private String refund_status;
+
+    @TableField(value = "expire_time")
+    private Timestamp expire_time;
+
     @TableField(value = "registration_status")
     private String registration_status;
 

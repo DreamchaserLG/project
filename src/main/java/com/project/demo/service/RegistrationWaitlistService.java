@@ -19,8 +19,10 @@ public class RegistrationWaitlistService {
 
     public static final String STATUS_CONFIRMED = "报名成功";
     public static final String STATUS_CONFIRMED_LEGACY = "已报名";
+    public static final String STATUS_PENDING_PAYMENT = "待支付";
     public static final String STATUS_WAITLIST = "候补中";
     public static final String STATUS_WAITLIST_REVIEW = "候补审核中";
+    public static final String STATUS_WAITLIST_FAILED = "候补失败";
     public static final String STATUS_CANCELLED = "已取消";
     public static final String TRAVEL_NOT_APPROVED_MESSAGE = "当前报名尚未审核通过，无法进行行程确认";
 
@@ -30,6 +32,7 @@ public class RegistrationWaitlistService {
 
     public static final String PAY_UNPAID = "未支付";
     public static final String PAY_PAID = "已支付";
+    public static final String PAY_TIMEOUT = "超时未支付";
     public static final String PAY_REFUNDING = "退款中";
     public static final String PAY_REFUNDED = "已退款";
 
@@ -667,6 +670,92 @@ public class RegistrationWaitlistService {
                 registrationId);
     }
 
+    @Transactional
+    public Map<String, Object> markPaymentSuccess(Integer registrationId, String payType) {
+        if (registrationId == null || registrationId <= 0) {
+            return fail("报名记录不存在");
+        }
+
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT registration_information_id, source_table, source_id, registration_status, pay_state, examine_state, expire_time "
+                        +
+                        "FROM registration_information WHERE IFNULL(is_deleted, 0) = 0 AND registration_information_id = ? FOR UPDATE",
+                registrationId);
+        if (rows.isEmpty()) {
+            return fail("报名记录不存在");
+        }
+
+        Map<String, Object> registration = rows.get(0);
+        String payState = safeString(registration.get("pay_state"));
+        if (PAY_REFUNDING.equals(payState) || PAY_REFUNDED.equals(payState)) {
+            return fail("退款中的报名不能再次支付");
+        }
+        if (PAY_TIMEOUT.equals(payState) || isExpired(registration.get("expire_time"))) {
+            cancelRegistration(registrationId, "支付超时", "");
+            return fail("支付已超时，报名已取消");
+        }
+
+        String currentStatus = normalizeStatus(registration.get("registration_status"));
+        String nextStatus = STATUS_PENDING_PAYMENT.equals(currentStatus) ? STATUS_CONFIRMED : currentStatus;
+        if (isWaitlistStatus(currentStatus)) {
+            nextStatus = STATUS_WAITLIST;
+        }
+
+        jdbcTemplate.update(
+                "UPDATE registration_information SET pay_state = ?, pay_type = ?, payment_time = NOW(), registration_status = ?, update_time = NOW() "
+                        +
+                        "WHERE registration_information_id = ?",
+                PAY_PAID,
+                safeString(payType),
+                nextStatus,
+                registrationId);
+
+        Integer boothId = SOURCE_TABLE_BOOTH.equals(safeString(registration.get("source_table")))
+                ? toInt(registration.get("source_id"))
+                : null;
+        if (boothId != null && boothId > 0) {
+            Map<String, Object> booth = getBoothForUpdate(boothId);
+            fillAvailableSeats(boothId, booth == null ? 0 : boothCapacity(booth.get("registration_information_limit_times")));
+        }
+
+        Map<String, Object> result = new HashMap<String, Object>();
+        result.put("ok", true);
+        result.put("registration_information_id", registrationId);
+        result.put("pay_state", PAY_PAID);
+        result.put("registration_status", nextStatus);
+        result.put("message", "支付成功");
+        return result;
+    }
+
+    @Transactional
+    public int cancelExpiredPendingPayments() {
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT registration_information_id FROM registration_information " +
+                        "WHERE IFNULL(is_deleted, 0) = 0 AND pay_state = ? AND expire_time IS NOT NULL AND expire_time <= NOW() " +
+                        "AND registration_status IN (?, ?, ?)",
+                PAY_UNPAID,
+                STATUS_PENDING_PAYMENT,
+                STATUS_CONFIRMED,
+                STATUS_WAITLIST);
+
+        int count = 0;
+        for (Map<String, Object> row : rows) {
+            Integer registrationId = toInt(row.get("registration_information_id"));
+            if (registrationId == null) {
+                continue;
+            }
+            Map<String, Object> result = cancelRegistration(registrationId, "支付超时", "");
+            if (Boolean.TRUE.equals(result.get("ok"))) {
+                jdbcTemplate.update(
+                        "UPDATE registration_information SET pay_state = ?, update_time = NOW() WHERE registration_information_id = ?",
+                        PAY_TIMEOUT,
+                        registrationId);
+                count++;
+            }
+        }
+        return count;
+    }
+
     public Map<String, Object> getRegistration(Integer registrationId) {
         if (registrationId == null || registrationId <= 0) {
             return null;
@@ -996,6 +1085,25 @@ public class RegistrationWaitlistService {
 
     private boolean isWaitlistStatus(String status) {
         return STATUS_WAITLIST.equals(status) || STATUS_WAITLIST_REVIEW.equals(status);
+    }
+
+    private boolean isExpired(Object rawValue) {
+        if (rawValue == null) {
+            return false;
+        }
+        long expireMillis;
+        if (rawValue instanceof java.sql.Timestamp) {
+            expireMillis = ((java.sql.Timestamp) rawValue).getTime();
+        } else if (rawValue instanceof java.util.Date) {
+            expireMillis = ((java.util.Date) rawValue).getTime();
+        } else {
+            try {
+                expireMillis = java.sql.Timestamp.valueOf(safeString(rawValue)).getTime();
+            } catch (Exception e) {
+                return false;
+            }
+        }
+        return expireMillis <= System.currentTimeMillis();
     }
 
     private String defaultString(Object rawValue, String defaultValue) {

@@ -397,8 +397,8 @@
 					});
 					const obj = registration && registration.result && registration.result.obj ? registration.result.obj : null;
 					const status = obj && obj.registration_status === "已报名" ? "报名成功" : (obj ? obj.registration_status : "");
-					if (!obj || status !== "报名成功" || obj.examine_state !== "已通过") {
-						return "当前报名尚未审核通过，无法进行行程确认";
+					if (!obj || status !== "报名成功") {
+						return "当前报名尚未通过，无法进行行程确认";
 					}
 				}
 				if (!param.confirm_time){

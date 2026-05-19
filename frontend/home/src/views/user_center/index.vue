@@ -101,14 +101,14 @@
                       </span>
                       <small>{{ formatDate(item.registration_time || item.create_time) }}</small>
                       <el-button
-                        v-if="item.examine_state === '已通过' && !hasTravelForRegistration(item)"
+                        v-if="(item.registration_status === '报名成功' || item.registration_status === '待支付') && !hasTravelForRegistration(item)"
                         type="primary"
                         size="mini"
                         @click="applyTravel(item)"
                       >行程确认</el-button>
                       <span v-else-if="hasTravelForRegistration(item)" class="page_status_tag is-success">行程已提交</span>
                       <el-button
-                        v-if="item.examine_state === '已通过' && !hasRefundForRegistration(item)"
+                        v-if="(item.registration_status === '报名成功' || item.registration_status === '待支付') && !hasRefundForRegistration(item)"
                         type="warning"
                         size="mini"
                         @click="applyRefund(item)"
